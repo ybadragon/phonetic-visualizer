@@ -40,6 +40,15 @@ const visualizationState = {
     centerY: 0,
     twinkleSpeed: 0.05
   },
+  tree: {
+    word: null,
+    treeData: null,
+    root: null,
+    width: 0,
+    height: 0,
+    animationStartTime: 0,
+    animationId: null
+  },
   waveform: {
     frequencies: null,
     waveData: null,

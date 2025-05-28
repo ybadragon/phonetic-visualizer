@@ -11,8 +11,8 @@ import './visualizers/spiral.js';
 import './visualizers/typography.js';
 import './visualizers/ripple.js';
 import './visualizers/example.js'; // Example visualizer using dynamic canvas creation
+import './visualizers/tree.js'; // Tree visualizer now uses the generic architecture
 // The following imports will be updated as we refactor each visualizer
-import { renderTree } from './visualizers/tree.js';
 import { renderWaveform, toggleWaveformAudio, cleanupWaveformResources } from './visualizers/waveform.js';
 import { renderConstellation } from './visualizers/constellation.js';
 import { renderFractal } from './visualizers/fractal.js';
@@ -113,10 +113,6 @@ function renderSelectedVisualization() {
   
   // Fall back to the old system for visualizers that haven't been refactored yet
   switch (choice) {
-    case "tree":
-      document.getElementById("treeContainer").style.display = "block";
-      renderTree(word);
-      break;
     case "waveform":
       document.getElementById("waveformContainer").style.display = "block";
       renderWaveform(word);
@@ -130,9 +126,13 @@ function renderSelectedVisualization() {
       renderConstellation(word);
       break;
     default:
-      // Default to tree if unknown visualization type
-      document.getElementById("treeContainer").style.display = "block";
-      renderTree(word);
+      // Default to a registered visualizer if unknown visualization type
+      const defaultVisualizer = getVisualizer('tree');
+      if (defaultVisualizer) {
+        defaultVisualizer.render(word);
+      } else {
+        console.error(`No default visualizer found for unknown type: ${choice}`);
+      }
   }
 }
 

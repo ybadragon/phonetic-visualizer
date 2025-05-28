@@ -95,9 +95,6 @@ function animateTypewriter(text, duration) {
  * Clears all visualizations from the display
  */
 function clearVisuals() {
-  // Clear the tree SVG
-  d3.select("#tree").style("display", "none").selectAll("*").remove();
-  
   // Clear static canvases (for backward compatibility)
   const staticCanvases = ["spiral", "ripple", "fractal", "constellation", "waveform", "typography"];
   staticCanvases.forEach(id => {

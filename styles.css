@@ -1,0 +1,121 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #1a1a2e;
+  color: #fff;
+}
+
+#controls {
+  padding: 1em;
+  background: #16213e;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1em;
+}
+
+#inputContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#controls input {
+  font-size: 1em;
+  padding: 0.5em;
+  border-radius: 6px;
+  border: none;
+  transition: background-color 0.3s ease;
+}
+
+#controls input:disabled {
+  background-color: #f0f0f0;
+  color: #888;
+  cursor: not-allowed;
+  border: 2px solid #e94560;
+}
+
+#inputDisabledMessage {
+  color: #e94560;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: center;
+  font-weight: bold;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+#visualizationSelect {
+  appearance: none;
+  background-color: #e94560;
+  color: white;
+  border: none;
+  padding: 0.5em 1em;
+  font-size: 1em;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#tree, #spiral, #ripple, #fractal, #constellation, #waveform, #typography {
+  width: 100%;
+  height: 600px;
+}
+
+.node circle {
+  fill: #e94560;
+}
+
+.node text {
+  fill: white;
+  font-size: 12px;
+}
+
+.link {
+  fill: none;
+  stroke: #fff;
+  stroke-opacity: 0.5;
+}
+
+#typewriterContainer {
+  text-align: center;
+  padding: 1em;
+  background: #16213e;
+  margin-bottom: 1em;
+  position: relative;
+}
+
+#typewriterText {
+  font-family: monospace;
+  font-size: 1.5em;
+  color: #e94560;
+  margin: 0;
+  min-height: 1.5em;
+  border-right: 0.15em solid #e94560;
+  white-space: nowrap;
+  overflow: hidden;
+  letter-spacing: 0.1em;
+  text-overflow: ellipsis;
+  transition: font-size 0.3s ease;
+}
+
+/* Visualization container for zoom/pan */
+.visualization-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 600px;
+}
+
+/* Add cursor styles to indicate interactive elements */
+#tree, #spiral, #ripple, #fractal, #constellation, #waveform, #typography {
+  cursor: grab;
+}
+
+#tree:active, #spiral:active, #ripple:active, #fractal:active, #constellation:active, #waveform:active, #typography:active {
+  cursor: grabbing;
+}

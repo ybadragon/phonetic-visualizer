@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Phonetic Tree & Spiral Visualizer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="controls">
+    <div id="inputContainer">
+      <input id="wordInput" type="text" placeholder="Enter a word" />
+      <div id="inputDisabledMessage" style="display: none; color: #e94560; font-size: 12px; margin-top: 5px;">
+        Input disabled while audio is playing. Click the pause button to enable.
+      </div>
+    </div>
+    <select id="visualizationSelect">
+      <option value="" disabled selected hidden>🔍 Select Visualization</option>
+      <option value="tree">Recursive Tree</option>
+      <option value="spiral">Spiral Path</option>
+      <option value="ripple1">Radial Expansion</option>
+      <option value="ripple2">Concentric Waves</option>
+      <option value="ripple3">Animated Pulse</option>
+      <option value="fractal">Fractal Garden</option>
+      <option value="constellation">Constellation</option>
+      <option value="waveform">Waveform</option>
+      <option value="typography">Typography Animation</option>
+    </select>
+  </div>
+  <div id="typewriterContainer">
+    <h2 id="typewriterText"></h2>
+  </div>
+
+  <div class="visualization-container" id="treeContainer">
+    <svg id="tree"></svg>
+  </div>
+
+  <div class="visualization-container" id="spiralContainer">
+    <canvas id="spiral"></canvas>
+  </div>
+
+  <div class="visualization-container" id="rippleContainer">
+    <canvas id="ripple"></canvas>
+  </div>
+
+  <div class="visualization-container" id="fractalContainer">
+    <canvas id="fractal"></canvas>
+  </div>
+
+  <div class="visualization-container" id="constellationContainer">
+    <canvas id="constellation"></canvas>
+  </div>
+
+  <div class="visualization-container" id="waveformContainer">
+    <canvas id="waveform"></canvas>
+  </div>
+  
+  <div class="visualization-container" id="typographyContainer">
+    <canvas id="typography"></canvas>
+  </div>
+  
+  <!-- External Libraries -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  
+  <!-- Application Scripts -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

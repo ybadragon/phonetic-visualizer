@@ -28,6 +28,7 @@ Based on the refactoring plan, the following progress has been made:
   - ✅ Refactored fractal visualizer to use the new system
   - ✅ Refactored tree visualizer to use the new system
   - ✅ Waveform visualizer refactored
+  - ❌ Atom visualizer (removed) - Abandoned due to persistent data handling issues.
 
 - ✅ Phase 4: Update Main Application
   - ✅ Updated main.js to use the registration system
@@ -91,7 +92,13 @@ Based on the refactoring plan, the following progress has been made:
 
 ## Recent Changes
 
-1. **Futuristic Glyphs Enhancements**:
+1. **Atom Visualizer (Removed)**:
+    - Attempted to create an "Atom" visualizer.
+    - Encountered persistent issues with displaying phoneme text correctly on particles and with typewriter animation, specific to this visualizer.
+    - Despite multiple attempts to debug data handling within `atom.js` and assuming correct data from `visualizer-base.js` (as other visualizers work), the issues remained.
+    - The visualizer has been removed from the project.
+
+2. **Futuristic Glyphs Enhancements**:
     - Added a new visualizer called "Futuristic Glyphs" (`futuristic.js`). This visualizer displays phonetic components using concentric, glowing geometric shapes with pulsing and rotating animations, adhering to the generic visualizer architecture and dynamic canvas creation.
     - Updated "Futuristic Glyphs" to use a different color for each concentric layer, cycling through a predefined palette (cyan, magenta, lime green, electric blue) to improve layer differentiation.
     - Added an icon (💠) for "Futuristic Glyphs" in the selection dropdown.

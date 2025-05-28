@@ -31,7 +31,8 @@ The Phonetic Visualizer project is in an active development state, with a major 
 5. ✅ **Constellation Visualizer**: Arranges phonetic components in a constellation-like pattern
 6. ✅ **Waveform Visualizer**: Displays phonetic components as audio waveforms with playback
 7. ✅ **Futuristic Glyphs**: Displays phonetic components with a futuristic, geometric aesthetic (new)
-8. ✅ **Typography Visualizer (Removed)**: Animates phonetic components with typography effects
+8. ❌ **Atom Visualizer (Removed)**: Attempted and removed due to persistent issues.
+9. ✅ **Typography Visualizer (Removed)**: Animates phonetic components with typography effects
 
 ### Technical Implementation
 
@@ -64,7 +65,7 @@ The Phonetic Visualizer project is in an active development state, with a major 
 
 1. ❌ **Preset System**: Allow saving and loading visualization presets
 2. ❌ **Responsive Design Improvements**: Better support for different screen sizes
-3. 🟡 **Additional Visualizers**: Implement more visualization styles (Futuristic Glyphs added)
+3. 🟡 **Additional Visualizers**: Implement more visualization styles (Futuristic Glyphs added, Atom removed)
 4. ❌ **Export Functionality**: Allow exporting visualizations as images
 
 ## Known Issues

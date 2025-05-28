@@ -25,7 +25,7 @@ This set of guidelines is specific to the phonetic visualizer project and outlin
 ## Project structure
 - Keep visualizer implementations in separate files in the js/visualizers directory
 - Maintain clean separation between state management, utilities, and visualization rendering
-- When adding or removing visualizers, update all relevant files: js/main.js, index.html, js/visualizer-base.js, and relevant memory-bank files (activeContext.md, progress.md). Files like styles.css, js/utils.js, and js/state.js may not always need changes if the visualizer was using the generic system.
+- When adding or removing visualizers, update all relevant files: js/main.js, and relevant memory-bank files (activeContext.md, progress.md, visualization-development.md). Files like index.html, js/visualizer-base.js, styles.css, js/utils.js, and js/state.js may not always need changes if the visualizer is using the generic system with dynamic canvas creation.
 
 ## Testing approach
 - ALWAYS allow the user to manually test changes rather than automatically launching test environments

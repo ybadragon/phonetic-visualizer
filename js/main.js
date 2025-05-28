@@ -7,11 +7,11 @@ import { clearVisuals } from './utils.js';
 import { getVisualizer, initializeVisualizerUI, getAllVisualizers, getAllCanvasIds } from './visualizer-base.js';
 
 // Import visualizers to register them with the system
+import './visualizers/tree.js'; // Tree visualizer now uses the generic architecture
 import './visualizers/spiral.js';
 import './visualizers/typography.js';
 import './visualizers/ripple.js';
 import './visualizers/example.js'; // Example visualizer using dynamic canvas creation
-import './visualizers/tree.js'; // Tree visualizer now uses the generic architecture
 // The following imports will be updated as we refactor each visualizer
 import { renderWaveform, toggleWaveformAudio, cleanupWaveformResources } from './visualizers/waveform.js';
 import { renderConstellation } from './visualizers/constellation.js';
@@ -81,8 +81,13 @@ function renderSelectedVisualization() {
   // If no visualization is selected, default to tree
   if (!choice || choice === "") {
     document.getElementById("visualizationSelect").value = "tree";
-    document.getElementById("treeContainer").style.display = "block";
-    renderTree(word);
+    // Use the visualizer system to render the tree
+    const treeVisualizer = getVisualizer('tree');
+    if (treeVisualizer) {
+      treeVisualizer.render(word);
+    } else {
+      console.error("Tree visualizer not found");
+    }
     return;
   }
   

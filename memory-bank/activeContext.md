@@ -57,7 +57,13 @@ Based on the refactoring plan, the following progress has been made:
 
 ## Recent Changes
 
-1. **Tree Visualizer Refactoring**: Successfully refactored the Tree visualizer to use the generic architecture and dynamic canvas creation system. This refactoring:
+1. **Tree Visualizer Fixes**: Fixed several issues with the Tree visualizer:
+   - Renamed the visualizer from "Tree Structure" to "Recursive Tree" in the dropdown
+   - Made the tree visualizer appear first in the list of visualizers by reordering imports
+   - Fixed a rendering issue where the tree visualizer wasn't properly rendering when initially selected
+   - Updated the code to use the visualizer system properly when no visualization is explicitly selected
+
+2. **Tree Visualizer Refactoring**: Successfully refactored the Tree visualizer to use the generic architecture and dynamic canvas creation system. This refactoring:
    - Converts the tree visualizer from SVG/D3.js to Canvas-based rendering
    - Implements a sophisticated multi-pass tree layout algorithm without D3.js dependency
    - Ensures proper node positioning and prevents line crossings

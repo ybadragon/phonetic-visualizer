@@ -372,7 +372,7 @@ function collectLeaves(word, maxDepth = 3) {
 
 // Register the tree visualizer with the system
 registerVisualizer('tree', {
-  displayName: 'Tree Structure',
+  displayName: 'Recursive Tree',
   renderFunction: renderTreeSpecific,
   redrawFunction: redrawTreeSpecific,
   stateTemplate: {

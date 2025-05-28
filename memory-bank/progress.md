@@ -74,6 +74,7 @@ The Phonetic Visualizer project is in an active development state, with a major 
 2. 🐛 **Canvas Sizing**: Canvas dimensions may not be set correctly if container is not visible
 3. 🐛 **Waveform Audio**: Waveform visualizer's audio handling could be improved
 4. 🐛 **Browser Differences**: Some canvas operations may behave differently across browsers
+5. ✅ **Tree Visualizer Issues**: Fixed issues with the tree visualizer not rendering properly when initially selected, renamed to "Recursive Tree", and made it first in the visualizer list
 
 ### Visual Issues
 

@@ -52,32 +52,43 @@ body {
 
 #visualizationSelect {
   appearance: none;
-  background-color: #e94560;
+  background-color: #a93146; /* Darker, muted red/pink */
   color: white;
-  border: none;
+  border: 1px solid #888888; /* Light gray border */
   padding: 0.5em 1em;
   font-size: 1em;
   border-radius: 6px;
   cursor: pointer;
   display: flex; 
   align-items: center; 
+  /* justify-content: flex-start; */ /* Default behavior is fine */
 }
+
+/* Styles for .viz-icon apply to both button display and options if structure is similar */
+/* No specific .viz-text for the main button display as it's harder to control */
+
 
 #visualizationSelect option {
   display: flex; /* For aligning icon and text within option */
   align-items: center;
-  /* gap: 0.3em; */ /* Gap will be handled by margin on viz-icon or text */
+  background-color: #a93146; /* Muted red/pink background for options */
+  color: white; /* Ensure text is white */
 }
 
+/* Styles for .viz-icon within options */
 #visualizationSelect option .viz-icon {
-  display: inline-flex; /* Helps with alignment and sizing */
+  display: inline-flex; 
   align-items: center;
   justify-content: center;
-  width: 1.2em; /* Give a consistent width for the icon container */
-  height: 1em;  /* Match font height */
+  width: 1.2em; 
+  min-width: 1.2em; /* Ensure it takes space even if empty */
+  height: 1em;  
   margin-right: 0.4em; /* Space between icon and text */
-  line-height: 1em; /* Ensure icon is centered in its line height */
+  line-height: 1em; 
 }
+
+/* Removed .viz-text styles as the span is removed from JS */
+
 
 #visualizationSelect option .viz-icon svg {
   width: 100%; /* SVG takes full width of its .viz-icon container */

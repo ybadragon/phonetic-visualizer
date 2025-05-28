@@ -291,10 +291,11 @@ function initializeVisualizerUI() {
     
     let iconHTML = '';
     if (visualizer.icon) {
-      // Wrap icon in a span for consistent styling and alignment
+      // Wrap icon in a span for consistent styling and alignment, add a space after if icon exists
       iconHTML = `<span class="viz-icon">${visualizer.icon}</span> `;
     }
     
+    // Use innerHTML to correctly render the icon span, then append the display name as text
     option.innerHTML = `${iconHTML}${visualizer.displayName}`;
     select.appendChild(option);
   });

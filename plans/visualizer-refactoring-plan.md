@@ -30,7 +30,7 @@ Implement a generic visualizer architecture with a registration system that hand
 ### Phase 3: Convert Existing Visualizers
 - [x] Refactor spiral visualizer to use the new system
 - [x] Refactor ripple visualizers to use the new system
-- [ ] Convert remaining visualizers to use the dynamic canvas creation system:
+- [ ] Refactor remaining visualizers using combined approach (generic architecture + dynamic canvas creation):
   - [ ] Constellation visualizer
   - [ ] Fractal visualizer
   - [ ] Tree visualizer

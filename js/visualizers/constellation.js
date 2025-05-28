@@ -3,37 +3,18 @@
  * Renders a constellation-style visualization using Canvas
  */
 
-import { animateTypewriter, generatePhoneticLayers, getFinalLayerText, getCanvasTransform } from '../utils.js';
+import { getCanvasTransform } from '../utils.js';
 import { getState, updateState, cancelAnimation } from '../state.js';
+import { registerVisualizer, getVisualizer } from '../visualizer-base.js';
 
 /**
- * Renders a constellation visualization for the given word
+ * Specific render function for constellation visualization
  * @param {string} word - The word to visualize
+ * @param {HTMLCanvasElement} canvas - The canvas element
+ * @param {CanvasRenderingContext2D} ctx - The canvas context
+ * @param {Array} layers - The phonetic layers
  */
-function renderConstellation(word) {
-  if (!word) return;
-  
-  const canvas = document.getElementById("constellation");
-  canvas.style.display = "block";
-  const ctx = canvas.getContext("2d");
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  // Make sure the canvas container is visible
-  document.getElementById("constellationContainer").style.display = "block";
-  
-  // Generate phonetic layers
-  const layers = generatePhoneticLayers(word, 3); // Increase to 3 levels of recursion
-  
-  // Get the final layer for typewriter animation
-  const finalText = getFinalLayerText(layers);
-  
-  // Animation duration
-  const animationDuration = 6000; // 6 seconds for full animation cycle
-  
-  // Start typewriter animation
-  animateTypewriter(finalText, animationDuration);
+function renderConstellationSpecific(word, canvas, ctx, layers) {
   
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
@@ -243,23 +224,33 @@ function renderConstellation(word) {
    */
   function handleMouseMove(event) {
     const rect = canvas.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
     
-    // Apply inverse transform to get canvas coordinates
-    const transform = getCanvasTransform("constellation");
-    const scale = transform.scale;
-    const offsetX = transform.offsetX;
-    const offsetY = transform.offsetY;
+    // Get raw mouse position relative to canvas
+    const rawMouseX = event.clientX - rect.left;
+    const rawMouseY = event.clientY - rect.top;
     
-    const canvasX = mouseX / scale - offsetX;
-    const canvasY = mouseY / scale - offsetY;
+    // Get current transform
+    const transform = getCanvasTransform(canvas.id);
+    const scale = transform.scale || 1;
+    const offsetX = transform.offsetX || 0;
+    const offsetY = transform.offsetY || 0;
+    
+    // Convert mouse position to the untransformed coordinate space (world space)
+    // The correct inverse transform based on how the canvas transform is applied:
+    // 1. First translate by offsetX, offsetY
+    // 2. Then scale by scale
+    // So the inverse is:
+    // 1. Divide by scale
+    // 2. Subtract offsetX/scale (because offsetX is in screen space, not world space)
+    const canvasX = (rawMouseX / scale) - (offsetX / scale);
+    const canvasY = (rawMouseY / scale) - (offsetY / scale);
     
     // Check if mouse is over any star
     let hoveredStar = null;
     const hoverRadius = 20; // Larger hover area for better usability
     
     for (const star of stars) {
+      // Stars are stored in untransformed coordinates, so we can compare directly
       const distance = Math.sqrt(
         Math.pow(canvasX - star.x, 2) + 
         Math.pow(canvasY - star.y, 2)
@@ -280,39 +271,50 @@ function renderConstellation(word) {
   }
   
   // Start animation
-  function drawFrame() {
+  function animate() {
     // Calculate time-based animation
-    const elapsedTime = Date.now() - getState('constellation').animationStartTime;
+    const state = getState('constellation');
+    const elapsedTime = Date.now() - state.animationStartTime;
+    
     updateState('constellation', { 
-      frame: getState('constellation').frame + 1,
+      frame: state.frame + 1,
       elapsedTime
     });
     
     // Draw using the redraw function
-    redrawConstellation();
+    redrawConstellationSpecific(getState('constellation'), canvas, ctx);
     
     // Continue animation
-    const animationId = requestAnimationFrame(drawFrame);
+    const animationId = requestAnimationFrame(animate);
     updateState('constellation', { animationId });
   }
   
-  drawFrame();
+  animate();
 }
 
 /**
- * Redraws the constellation visualization without recalculating
+ * Specific redraw function for constellation visualization
+ * @param {Object} state - The current state
+ * @param {HTMLCanvasElement} canvas - The canvas element
+ * @param {CanvasRenderingContext2D} ctx - The canvas context
  */
-function redrawConstellation() {
-  const state = getState('constellation');
-  if (!state.stars) return;
+function redrawConstellationSpecific(state, canvas, ctx) {
+  if (!state || !state.stars) return;
   
-  const canvas = document.getElementById("constellation");
-  const ctx = canvas.getContext("2d");
-  const transform = getCanvasTransform("constellation");
-  const scale = transform.scale;
-  const offsetX = transform.offsetX;
-  const offsetY = transform.offsetY;
+  // Ensure canvas is properly sized
+  if (canvas.width === 0 || canvas.height === 0) {
+    console.error("Canvas has zero dimensions, cannot render constellation");
+    return;
+  }
   
+  // Get transform for zoom/pan
+  const transform = getCanvasTransform(canvas.id);
+  const scale = transform.scale || 1;
+  const offsetX = transform.offsetX || 0;
+  const offsetY = transform.offsetY || 0;
+  
+  // Clear canvas with transform reset
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   // Draw background gradient
@@ -323,9 +325,9 @@ function redrawConstellation() {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  // Apply transform
+  // Apply transform for zoom/pan
   ctx.save();
-  ctx.translate(offsetX * scale, offsetY * scale);
+  ctx.translate(offsetX, offsetY);
   ctx.scale(scale, scale);
   
   const stars = state.stars;
@@ -529,4 +531,48 @@ function redrawConstellation() {
   ctx.restore();
 }
 
+// Register the constellation visualizer with the system
+registerVisualizer('constellation', {
+  displayName: 'Constellation',
+  renderFunction: renderConstellationSpecific,
+  redrawFunction: redrawConstellationSpecific,
+  stateTemplate: {
+    stars: null,
+    connections: null,
+    colors: null,
+    centerX: 0,
+    centerY: 0,
+    twinkleSpeed: 0.05,
+    frame: 0,
+    animationStartTime: 0,
+    elapsedTime: 0,
+    hoveredConstellation: null,
+    backgroundStars: null,
+    animationId: null
+  },
+  animationConfig: {
+    duration: 6000,
+    layerDepth: 3
+  }
+});
+
+// For backward compatibility
+function renderConstellation(word) {
+  const visualizer = getVisualizer('constellation');
+  if (visualizer) {
+    visualizer.render(word);
+  }
+}
+
+function redrawConstellation() {
+  const visualizer = getVisualizer('constellation');
+  if (visualizer) {
+    visualizer.redraw();
+  }
+}
+
+// Export for backward compatibility
 export { renderConstellation, redrawConstellation };
+
+// Export the specific functions for potential reuse
+export { renderConstellationSpecific, redrawConstellationSpecific };

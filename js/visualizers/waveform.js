@@ -372,19 +372,51 @@ function renderWaveformSpecific(word, canvas, ctx, layers) {
     // Start animation loop
     function drawFrame() {
       const state = getState('waveform');
-      if (!state) return; // State might have been cleared
+      // Ensure soundBuffers is available before proceeding, as it's central to animation
+      if (!state || !state.soundBuffers) return; 
 
       const now = Date.now();
       const deltaTime = now - state.lastFrameTime;
+
+      // Update animation state (angles, sound triggers, pulsing)
+      if (state.isPlaying && deltaTime > 0) { // deltaTime > 0 to prevent issues if time is static
+        state.soundBuffers.forEach(sound => {
+          // Update angle
+          const prevAngle = sound.angle;
+          sound.angle += sound.speed * (deltaTime / 1000);
+          if (sound.angle >= Math.PI * 2) sound.angle -= Math.PI * 2;
+
+          // Check for sound triggers
+          const crossedPrimaryTrigger = (prevAngle < 0 && sound.angle >= 0) || (prevAngle < Math.PI * 2 && sound.angle >= Math.PI * 2);
+          const crossedSecondaryTrigger = state.dualTrigger && 
+            ((prevAngle < Math.PI && sound.angle >= Math.PI) || (prevAngle >= Math.PI && sound.angle < Math.PI));
+
+          if ((crossedPrimaryTrigger || crossedSecondaryTrigger) && now - sound.lastPlayedTime > 300) {
+            playDingSound(sound); // playDingSound uses and updates state internally
+            sound.pulsing = true;
+            sound.pulseStartTime = now; // Use 'now' from drawFrame for consistency
+          }
+
+          // Update pulsing state for visual effect duration
+          if (sound.pulsing) {
+            const timeSincePulse = now - sound.pulseStartTime;
+            if (timeSincePulse >= 500) { // Pulse visual effect lasts 500ms
+              sound.pulsing = false;
+            }
+          }
+        });
+      }
       
       updateState('waveform', {
         elapsedTime: now - state.animationStartTime,
         lastFrameTime: now,
-        deltaTime: deltaTime // Store deltaTime for redraw
+        deltaTime: deltaTime,
+        soundBuffers: state.soundBuffers // Persist updated angles, lastPlayedTime (via playDingSound), and pulse states
       });
       
-      // Get the updated state that includes deltaTime
-      const currentState = getState('waveform');
+      // Get the fully updated state for rendering
+      const currentState = getState('waveform'); 
+      if (!currentState) return; // State could have been cleared by an async operation
       redrawWaveformSpecific(currentState, canvas, ctx);
 
       const animationId = requestAnimationFrame(drawFrame);
@@ -396,13 +428,15 @@ function renderWaveformSpecific(word, canvas, ctx, layers) {
 }
 
 /**
- * Specific redraw function for Waveform visualization
+ * Specific redraw function for Waveform visualization (now only renders, does not update animation state)
  * @param {Object} state - The current state for 'waveform'
  * @param {HTMLCanvasElement} canvas - The canvas element
  * @param {CanvasRenderingContext2D} ctx - The canvas context
  */
 function redrawWaveformSpecific(state, canvas, ctx) {
-  if (!state || !state.analyzer) return;
+  // state.analyzer might not be present if audioContext failed.
+  // state itself could be null if cleared asynchronously.
+  if (!state || !state.analyzer || !state.soundBuffers) return;
 
   const transform = getCanvasTransform(canvas.id); // canvas.id is correct here
   const scale = transform.scale || 1;
@@ -422,7 +456,10 @@ function redrawWaveformSpecific(state, canvas, ctx) {
   ctx.translate(offsetX, offsetY); // Apply pan
   ctx.scale(scale, scale);       // Apply zoom
 
-  const { analyzer, dataArray, bufferLength, colors, soundBuffers = [], isPlaying, deltaTime = 16, dualTrigger } = state;
+  // deltaTime is primarily used in drawFrame for animation updates.
+  // It's available in state if needed for purely visual, time-dependent effects in redraw itself,
+  // but not for core animation logic like angle updates.
+  const { analyzer, dataArray, bufferLength, colors, soundBuffers = [], isPlaying, dualTrigger } = state;
   
   analyzer.getByteFrequencyData(dataArray); // For potential future use, original drew time domain
 
@@ -457,21 +494,8 @@ function redrawWaveformSpecific(state, canvas, ctx) {
   ctx.stroke();
 
   soundBuffers.forEach(sound => {
-    if (isPlaying) {
-      const prevAngle = sound.angle;
-      sound.angle += sound.speed * (deltaTime / 1000);
-
-      const crossedPrimaryTrigger = (prevAngle < 0 && sound.angle >= 0) || (prevAngle < Math.PI * 2 && sound.angle >= Math.PI * 2);
-      const crossedSecondaryTrigger = dualTrigger && ((prevAngle < Math.PI && sound.angle >= Math.PI) || (prevAngle > Math.PI && sound.angle < Math.PI));
-      
-      if (sound.angle >= Math.PI * 2) sound.angle -= Math.PI * 2;
-
-      if ((crossedPrimaryTrigger || crossedSecondaryTrigger) && Date.now() - sound.lastPlayedTime > 300) {
-        playDingSound(sound);
-        sound.pulsing = true;
-        sound.pulseStartTime = Date.now();
-      }
-    }
+    // Animation logic (angle update, sound triggering, pulsing state) is now handled in drawFrame.
+    // This function just draws based on the current state of 'sound'.
 
     const xPos = centerX + Math.cos(sound.angle) * sound.orbitRadius;
     const yPos = centerY + Math.sin(sound.angle) * sound.orbitRadius;
@@ -480,11 +504,15 @@ function redrawWaveformSpecific(state, canvas, ctx) {
     let pulseFactor = 1.0;
 
     if (sound.pulsing) {
+      // sound.pulsing is true if drawFrame determined we are within the 0-500ms pulse window.
+      // Calculate visual pulse factor based on current time.
       const timeSincePulse = Date.now() - sound.pulseStartTime;
-      if (timeSincePulse < 500) {
+      if (timeSincePulse >= 0 && timeSincePulse < 500) { // Ensure timeSincePulse is positive
         pulseFactor = 1.0 + 0.5 * Math.sin(timeSincePulse / 500 * Math.PI);
       } else {
-        sound.pulsing = false;
+        // If sound.pulsing is true but timeSincePulse is outside expected range (e.g., due to lag),
+        // default to no visual pulse or end of pulse.
+        pulseFactor = 1.0; 
       }
     }
 

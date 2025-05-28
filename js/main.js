@@ -7,15 +7,17 @@ import { clearVisuals } from './utils.js';
 import { getVisualizer, initializeVisualizerUI, getAllVisualizers, getAllCanvasIds } from './visualizer-base.js';
 
 // Import visualizers to register them with the system
-import './visualizers/tree.js'; // Tree visualizer now uses the generic architecture
+// Note: Icons are added directly in the visualizer files now.
+import './visualizers/tree.js'; 
 import './visualizers/spiral.js';
 import './visualizers/typography.js';
 import './visualizers/ripple.js';
-import './visualizers/example.js'; // Example visualizer using dynamic canvas creation
-import './visualizers/fractal.js'; // Fractal visualizer now uses the generic architecture
-import './visualizers/waveform.js'; // Waveform visualizer now uses the generic architecture
+import './visualizers/example.js';
+import './visualizers/fractal.js';
+import './visualizers/waveform.js';
+import './visualizers/constellation.js'; // Ensure constellation is also imported for registration
 import { stopWaveformVisualization } from './visualizers/waveform.js'; // Specific stop function
-import { renderConstellation } from './visualizers/constellation.js';
+// renderConstellation is not needed here as constellation.js will handle its own registration
 
 // Log available visualizers for debugging
 let previouslySelectedVisualizerName = null; // Track previously active visualizer

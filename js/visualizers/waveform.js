@@ -606,6 +606,7 @@ function redrawWaveformSpecific(state, canvas, ctx) {
 // Register the waveform visualizer
 registerVisualizer('waveform', {
   displayName: 'Waveform Audio',
+  icon: '🔊', // Added icon
   canvasId: 'waveform', // Keep original canvas ID
   containerId: 'waveformContainer', // Keep original container ID
   renderFunction: renderWaveformSpecific,

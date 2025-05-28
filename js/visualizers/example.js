@@ -180,6 +180,7 @@ function redrawExampleSpecific(state, canvas, ctx) {
 // Note: We don't specify canvasId or containerId - they will be created dynamically
 registerVisualizer('example', {
   displayName: 'Dynamic Canvas Example',
+  icon: '✨', // Added icon
   renderFunction: renderExampleSpecific,
   redrawFunction: redrawExampleSpecific,
   stateTemplate: {

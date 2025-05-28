@@ -534,6 +534,7 @@ function redrawConstellationSpecific(state, canvas, ctx) {
 // Register the constellation visualizer with the system
 registerVisualizer('constellation', {
   displayName: 'Constellation',
+  icon: '✨', // Added icon
   renderFunction: renderConstellationSpecific,
   redrawFunction: redrawConstellationSpecific,
   stateTemplate: {

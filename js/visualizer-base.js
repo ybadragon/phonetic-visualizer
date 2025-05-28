@@ -79,6 +79,7 @@ function createVisualizer(config) {
   const {
     name,
     displayName,
+    icon, // Added icon property
     canvasId = `${name}-canvas`,
     containerId = `${name}Container`,
     renderFunction,
@@ -94,6 +95,7 @@ function createVisualizer(config) {
   return {
     name,
     displayName,
+    icon, // Store icon property
     canvasId,
     containerId,
     
@@ -286,7 +288,14 @@ function initializeVisualizerUI() {
     console.log(`Adding option for visualizer: ${key}`, visualizer);
     const option = document.createElement('option');
     option.value = key;
-    option.textContent = visualizer.displayName;
+    
+    let iconHTML = '';
+    if (visualizer.icon) {
+      // Wrap icon in a span for consistent styling and alignment
+      iconHTML = `<span class="viz-icon">${visualizer.icon}</span> `;
+    }
+    
+    option.innerHTML = `${iconHTML}${visualizer.displayName}`;
     select.appendChild(option);
   });
 }

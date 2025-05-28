@@ -517,6 +517,7 @@ function redrawRipple3Specific(state, canvas, ctx) {
 // Register the ripple visualizers with the system
 registerVisualizer('ripple1', {
   displayName: 'Radial Expansion',
+  icon: '💧', // Added icon
   canvasId: 'ripple',
   containerId: 'rippleContainer',
   renderFunction: renderRipple1Specific,
@@ -538,6 +539,7 @@ registerVisualizer('ripple1', {
 
 registerVisualizer('ripple2', {
   displayName: 'Concentric Waves',
+  icon: '🌊', // Added icon
   canvasId: 'ripple',
   containerId: 'rippleContainer',
   renderFunction: renderRipple2Specific,
@@ -561,6 +563,7 @@ registerVisualizer('ripple2', {
 
 registerVisualizer('ripple3', {
   displayName: 'Animated Pulse',
+  icon: '◎', // Updated icon to Bullseye
   canvasId: 'ripple',
   containerId: 'rippleContainer',
   renderFunction: renderRipple3Specific,

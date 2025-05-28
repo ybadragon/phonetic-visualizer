@@ -5,7 +5,7 @@
 
 import { getCanvasTransform } from '../utils.js';
 import { getState, updateState } from '../state.js';
-import { registerVisualizer } from '../visualizer-base.js';
+import { registerVisualizer, getVisualizer } from '../visualizer-base.js';
 
 /**
  * Specific render function for fractal garden visualization
@@ -1153,6 +1153,7 @@ function changeSeason(season) {
 // Register the fractal visualizer with the system
 registerVisualizer('fractal', {
   displayName: 'Fractal Garden',
+  icon: '🌸', // Updated icon to Cherry Blossom
   renderFunction: renderFractalSpecific,
   redrawFunction: redrawFractalSpecific,
   stateTemplate: {

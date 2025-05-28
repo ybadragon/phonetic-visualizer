@@ -373,6 +373,7 @@ function collectLeaves(word, maxDepth = 3) {
 // Register the tree visualizer with the system
 registerVisualizer('tree', {
   displayName: 'Recursive Tree',
+  icon: '🔀', // Reverted to emoji icon
   renderFunction: renderTreeSpecific,
   redrawFunction: redrawTreeSpecific,
   stateTemplate: {

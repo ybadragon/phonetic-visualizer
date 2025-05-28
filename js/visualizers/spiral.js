@@ -143,6 +143,7 @@ function redrawSpiralSpecific(state, canvas, ctx) {
 // Register the spiral visualizer with the system
 registerVisualizer('spiral', {
   displayName: 'Spiral Path',
+  icon: '🌀', // Added icon
   canvasId: 'spiral',
   containerId: 'spiralContainer',
   renderFunction: renderSpiralSpecific,

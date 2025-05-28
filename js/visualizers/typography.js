@@ -169,6 +169,7 @@ function easeOutElastic(x) {
 // Register the typography visualizer with the system
 registerVisualizer('typography', {
   displayName: 'Typography Animation',
+  icon: '📝', // Added icon
   canvasId: 'typography',
   containerId: 'typographyContainer',
   renderFunction: renderTypographySpecific,

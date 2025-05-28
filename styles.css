@@ -59,6 +59,30 @@ body {
   font-size: 1em;
   border-radius: 6px;
   cursor: pointer;
+  display: flex; 
+  align-items: center; 
+}
+
+#visualizationSelect option {
+  display: flex; /* For aligning icon and text within option */
+  align-items: center;
+  /* gap: 0.3em; */ /* Gap will be handled by margin on viz-icon or text */
+}
+
+#visualizationSelect option .viz-icon {
+  display: inline-flex; /* Helps with alignment and sizing */
+  align-items: center;
+  justify-content: center;
+  width: 1.2em; /* Give a consistent width for the icon container */
+  height: 1em;  /* Match font height */
+  margin-right: 0.4em; /* Space between icon and text */
+  line-height: 1em; /* Ensure icon is centered in its line height */
+}
+
+#visualizationSelect option .viz-icon svg {
+  width: 100%; /* SVG takes full width of its .viz-icon container */
+  height: 100%; /* SVG takes full height of its .viz-icon container */
+  /* fill is handled by SVG's currentColor or explicit stroke/fill */
 }
 
 #tree, #spiral, #ripple, #fractal, #constellation, #waveform, #typography {

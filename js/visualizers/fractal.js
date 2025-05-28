@@ -3,42 +3,22 @@
  * Renders a fractal garden visualization using Canvas
  */
 
-import { animateTypewriter, generatePhoneticLayers, getFinalLayerText } from '../utils.js';
-import { getState, updateState, cancelAnimation } from '../state.js';
+import { getCanvasTransform } from '../utils.js';
+import { getState, updateState } from '../state.js';
+import { registerVisualizer } from '../visualizer-base.js';
 
 /**
- * Renders a fractal garden visualization for the given word
+ * Specific render function for fractal garden visualization
  * @param {string} word - The word to visualize
+ * @param {HTMLCanvasElement} canvas - The canvas element
+ * @param {CanvasRenderingContext2D} ctx - The canvas context
+ * @param {Array} layers - The phonetic layers
  */
-function renderFractal(word) {
+function renderFractalSpecific(word, canvas, ctx, layers) {
   if (!word) return;
-  
-  const canvas = document.getElementById("fractal");
-  canvas.style.display = "block";
-  const ctx = canvas.getContext("2d");
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  // Make sure the canvas container is visible
-  document.getElementById("fractalContainer").style.display = "block";
-  
-  // Generate phonetic layers
-  const layers = generatePhoneticLayers(word, 3);
-  
-  // Get the final layer for typewriter animation
-  const finalText = getFinalLayerText(layers);
   
   // Calculate total number of branches for animation duration
   const totalBranches = layers.reduce((sum, layer) => sum + layer.length, 0) * 2;
-  // Estimate animation duration (20ms per branch ≈ 50fps)
-  const animationDuration = totalBranches * 20;
-  
-  // Start typewriter animation
-  animateTypewriter(finalText, animationDuration);
-  
-  // Generate fractal branches
-  const branches = generateFractalBranches(layers);
   
   // Define colors for different seasons
   const seasonColors = {
@@ -72,6 +52,9 @@ function renderFractal(word) {
   const season = getState('fractal').season || "spring";
   const colors = seasonColors[season];
   
+  // Generate fractal branches
+  const branches = generateFractalBranches(layers);
+  
   // Generate ground elements based on layers
   const groundElements = generateGroundElements(layers);
   
@@ -87,11 +70,9 @@ function renderFractal(word) {
     centerY: canvas.height,
     season: season,
     groundElements: groundElements,
-    groundElementsPositions: groundElementsPositions
+    groundElementsPositions: groundElementsPositions,
+    totalBranches: totalBranches
   });
-  
-  // Cancel any existing animation
-  cancelAnimation('fractal');
   
   // Start animation
   function animate() {
@@ -102,7 +83,7 @@ function renderFractal(word) {
     updateState('fractal', { frame: state.frame + 1 });
     
     // Draw using the redraw function
-    redrawFractal();
+    redrawFractalSpecific(state, canvas, ctx);
     
     if (state.frame < totalBranches) {
       const animationId = requestAnimationFrame(animate);
@@ -271,22 +252,27 @@ function generateFractalBranches(layers) {
 }
 
 /**
- * Redraws the fractal visualization without recalculating
+ * Specific redraw function for fractal garden visualization
+ * @param {Object} state - The current state
+ * @param {HTMLCanvasElement} canvas - The canvas element
+ * @param {CanvasRenderingContext2D} ctx - The canvas context
  */
-function redrawFractal() {
-  const state = getState('fractal');
+function redrawFractalSpecific(state, canvas, ctx) {
   if (!state.branches) return;
   
-  const canvas = document.getElementById("fractal");
-  const ctx = canvas.getContext("2d");
+  // Ensure canvas is properly sized
+  if (canvas.width === 0 || canvas.height === 0) {
+    console.error("Canvas has zero dimensions, cannot render fractal");
+    return;
+  }
   
-  // Get transform values for zoom/pan
-  const transform = getCanvasTransform();
-  const scale = transform.scale;
-  const offsetX = transform.offsetX;
-  const offsetY = transform.offsetY;
+  // Get transform for zoom/pan
+  const transform = getCanvasTransform(canvas.id);
+  const scale = transform.scale || 1;
+  const offsetX = transform.offsetX || 0;
+  const offsetY = transform.offsetY || 0;
   
-  // Clear canvas
+  // Clear canvas with transform reset
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
@@ -1147,19 +1133,6 @@ function shadeColor(color, amt) {
 }
 
 /**
- * Gets the current transform for the fractal canvas
- * @returns {Object} Object containing scale, offsetX, and offsetY
- */
-function getCanvasTransform() {
-  const canvas = document.getElementById("fractal");
-  return {
-    scale: parseFloat(canvas.dataset.scale || 1),
-    offsetX: parseFloat(canvas.dataset.offsetX || 0),
-    offsetY: parseFloat(canvas.dataset.offsetY || 0)
-  };
-}
-
-/**
  * Changes the season for the fractal garden
  * @param {string} season - Season to change to (spring, summer, fall, winter)
  */
@@ -1169,7 +1142,51 @@ function changeSeason(season) {
   }
   
   updateState('fractal', { season });
-  redrawFractal();
+  
+  // Get the visualizer and trigger a redraw
+  const visualizer = getVisualizer('fractal');
+  if (visualizer) {
+    visualizer.redraw();
+  }
 }
 
-export { renderFractal, redrawFractal, changeSeason };
+// Register the fractal visualizer with the system
+registerVisualizer('fractal', {
+  displayName: 'Fractal Garden',
+  renderFunction: renderFractalSpecific,
+  redrawFunction: redrawFractalSpecific,
+  stateTemplate: {
+    branches: null,
+    colors: null,
+    frame: 0,
+    centerX: 0,
+    centerY: 0,
+    season: "spring",
+    groundElements: null,
+    groundElementsPositions: null,
+    totalBranches: 0,
+    animationId: null
+  },
+  animationConfig: {
+    duration: 3000,
+    layerDepth: 3
+  }
+});
+
+// Export the specific functions for potential reuse and backward compatibility
+export { renderFractalSpecific, redrawFractalSpecific, changeSeason };
+
+// For backward compatibility
+export function renderFractal(word) {
+  const visualizer = getVisualizer('fractal');
+  if (visualizer) {
+    visualizer.render(word);
+  }
+}
+
+export function redrawFractal() {
+  const visualizer = getVisualizer('fractal');
+  if (visualizer) {
+    visualizer.redraw();
+  }
+}

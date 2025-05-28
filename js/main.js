@@ -12,10 +12,10 @@ import './visualizers/spiral.js';
 import './visualizers/typography.js';
 import './visualizers/ripple.js';
 import './visualizers/example.js'; // Example visualizer using dynamic canvas creation
+import './visualizers/fractal.js'; // Fractal visualizer now uses the generic architecture
 // The following imports will be updated as we refactor each visualizer
 import { renderWaveform, toggleWaveformAudio, cleanupWaveformResources } from './visualizers/waveform.js';
 import { renderConstellation } from './visualizers/constellation.js';
-import { renderFractal } from './visualizers/fractal.js';
 
 // Log available visualizers for debugging
 console.log('Main.js loaded, checking available visualizers...');
@@ -121,10 +121,6 @@ function renderSelectedVisualization() {
     case "waveform":
       document.getElementById("waveformContainer").style.display = "block";
       renderWaveform(word);
-      break;
-    case "fractal":
-      document.getElementById("fractalContainer").style.display = "block";
-      renderFractal(word);
       break;
     case "constellation":
       document.getElementById("constellationContainer").style.display = "block";

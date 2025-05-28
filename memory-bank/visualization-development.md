@@ -18,6 +18,9 @@ This set of guidelines is specific to the phonetic visualizer project and outlin
 - Use fixed rotation values instead of random ones to prevent flickering effects
 - Implement proper morphing effects for character transformations when applicable
 - Add appropriate comments to explain visualization algorithms
+- For smooth zoom animations, avoid large filled areas and gradients that are computationally intensive to redraw
+- Prefer outlines and simple shapes for better performance during zoom operations
+- Minimize the number of elements that need to be redrawn during zoom and pan operations
 
 ## Project structure
 - Keep visualizer implementations in separate files in the js/visualizers directory

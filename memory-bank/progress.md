@@ -45,17 +45,20 @@ The Phonetic Visualizer project is in an active development state, with a major 
 ### Refactoring Tasks
 
 1. ✅ **Ripple Visualizer Refactoring**: Converted ripple visualizers to use the new system
-2. ❌ **Constellation Visualizer Refactoring**: Convert constellation visualizer to use the new system
-3. ❌ **Fractal Visualizer Refactoring**: Convert fractal visualizer to use the new system
-4. ❌ **Tree Visualizer Refactoring**: Convert tree visualizer to use the new system
-5. ❌ **Waveform Visualizer Refactoring**: Convert waveform visualizer to use the new system
+2. ❌ **Convert All Visualizers to Dynamic Canvas Architecture**: Update remaining visualizers to use the dynamic canvas creation system
+   - ❌ Constellation visualizer
+   - ❌ Fractal visualizer
+   - ❌ Tree visualizer
+   - ❌ Waveform visualizer
+3. ❌ **Complete Generic System Refactoring**: Finish converting all visualizers to use the new generic architecture
 
 ### Enhancement Tasks
 
-1. ✅ **Dynamic Canvas Creation**: Implemented automatic canvas creation for new visualizers to prevent pan/zoom issues in future refactorings
-2. ❌ **Improved Error Handling**: Add better error handling for edge cases
-3. ❌ **Performance Optimizations**: Optimize canvas operations for better performance
-4. ❌ **Browser Compatibility Improvements**: Ensure consistent behavior across browsers
+1. ✅ **Dynamic Canvas Creation**: Implemented automatic canvas creation for new visualizers
+2. ✅ **Smooth Zoom and Pan**: Enhanced zoom/pan with smooth animation and better interaction
+3. ❌ **Improved Error Handling**: Add better error handling for edge cases
+4. ❌ **Performance Optimizations**: Optimize canvas operations for better performance
+5. ❌ **Browser Compatibility Improvements**: Ensure consistent behavior across browsers
 
 ### Potential Future Features
 
@@ -79,6 +82,7 @@ The Phonetic Visualizer project is in an active development state, with a major 
 2. 🐛 **Animation Timing**: Some animations may not complete properly with very short words
 3. 🐛 **Zoom Limitations**: Extreme zoom levels may cause rendering issues
 4. 🐛 **Transform Precision**: Zoom and pan transforms may have precision issues in some cases
+5. 🐛 **Performance During Zoom**: Large filled areas and gradients can cause jittery zoom animations
 
 ## Evolution of Project Decisions
 

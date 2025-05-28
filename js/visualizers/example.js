@@ -94,31 +94,9 @@ function redrawExampleSpecific(state, canvas, ctx) {
   const animationPeriod = 5000; // 5 seconds for a full animation cycle
   const animationPhase = (elapsedTime % animationPeriod) / animationPeriod; // 0 to 1
   
-  // Draw title
-  ctx.font = "bold 24px Arial";
-  ctx.fillStyle = "#333";
-  ctx.textAlign = "center";
-  ctx.fillText("Dynamic Canvas Example", centerX, 40);
+  // No title or subtitle - removed for smoother animation
   
-  // Draw subtitle
-  ctx.font = "16px Arial";
-  ctx.fillText(`Word: "${word}" - Frame: ${frame}`, centerX, 70);
-  
-  // Draw animated colorful background
-  const time = elapsedTime / 1000;
-  const hue1 = (time * 10) % 360;
-  const hue2 = (hue1 + 180) % 360;
-  
-  const gradient = ctx.createRadialGradient(
-    centerX, centerY, 0,
-    centerX, centerY, Math.max(canvas.width, canvas.height) / 2
-  );
-  gradient.addColorStop(0, `hsla(${hue1}, 80%, 70%, 0.9)`);
-  gradient.addColorStop(0.5, `hsla(${(hue1 + 60) % 360}, 80%, 60%, 0.7)`);
-  gradient.addColorStop(1, `hsla(${hue2}, 80%, 50%, 0.5)`);
-  
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // No background - transparent
   
   // Draw each layer with different visualization
   layers.forEach((layer, depth) => {
@@ -159,11 +137,9 @@ function redrawExampleSpecific(state, canvas, ctx) {
       const x = centerX + Math.cos(angle) * radius;
       const y = centerY + Math.sin(angle) * radius;
       
-      // Draw character background
+      // Draw character outline (no background)
       ctx.beginPath();
       ctx.arc(x, y, 15, 0, Math.PI * 2);
-      ctx.fillStyle = "white";
-      ctx.fill();
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.stroke();
@@ -174,11 +150,12 @@ function redrawExampleSpecific(state, canvas, ctx) {
     });
   });
   
-  // Draw center point
+  // Draw center point (outline only)
   ctx.beginPath();
   ctx.arc(centerX, centerY, 20, 0, Math.PI * 2);
-  ctx.fillStyle = "#333";
-  ctx.fill();
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 2;
+  ctx.stroke();
   
   // Draw animated rings
   const numRings = 3;

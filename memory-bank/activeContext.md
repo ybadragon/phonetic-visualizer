@@ -77,11 +77,19 @@ Based on the refactoring plan, the following progress has been made:
 
 The following tasks are prioritized for upcoming work:
 
-1. **Complete Visualizer Refactoring**: Convert the remaining visualizers to use the new system:
+1. **Convert All Visualizers to Dynamic Canvas Architecture**: Update the remaining visualizers to use the dynamic canvas creation system:
    - Constellation visualizer
    - Fractal visualizer
    - Tree visualizer
    - Waveform visualizer
+   
+   This will ensure all visualizers benefit from:
+   - Automatic canvas creation
+   - Standardized zoom and pan functionality
+   - Consistent transform handling
+   - Simplified code structure
+
+2. **Complete Visualizer Refactoring**: Continue converting the remaining visualizers to use the new generic system.
 
 3. **Improve Error Handling**: Add better error handling for edge cases, particularly for canvas operations and animation frames.
 
@@ -123,6 +131,8 @@ The following tasks are prioritized for upcoming work:
 - Implement smooth animations with appropriate timing
 - Use fixed rotation values instead of random ones to prevent flickering
 - Add appropriate comments to explain visualization algorithms
+- For smooth zoom animations, avoid large filled areas or gradients that are computationally intensive to redraw
+- Prefer outlines and simple shapes for better performance during zoom operations
 
 ### Testing Approach
 

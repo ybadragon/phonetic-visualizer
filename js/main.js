@@ -158,21 +158,36 @@ function setupCanvasZoomPan() {
     
     // Add smooth zoom animation variables
     let targetScale = scale;
+    let targetOffsetX = offsetX;
+    let targetOffsetY = offsetY;
     let zoomAnimationId = null;
     
     // Function to perform smooth zoom animation
     function animateZoom() {
-      // Calculate step based on difference between current and target scale
-      const diff = targetScale - scale;
-      const step = diff * 0.1; // 10% of the remaining difference each frame
+      // Calculate steps based on difference between current and target values
+      const scaleDiff = targetScale - scale;
+      const offsetXDiff = targetOffsetX - offsetX;
+      const offsetYDiff = targetOffsetY - offsetY;
       
-      if (Math.abs(diff) < 0.001) {
-        // Close enough, set to target and stop animation
+      // Use easing for smoother animation (10% of remaining difference)
+      const scaleStep = scaleDiff * 0.1;
+      const offsetXStep = offsetXDiff * 0.1;
+      const offsetYStep = offsetYDiff * 0.1;
+      
+      // Check if we're close enough to stop the animation
+      if (Math.abs(scaleDiff) < 0.001 && 
+          Math.abs(offsetXDiff) < 0.1 && 
+          Math.abs(offsetYDiff) < 0.1) {
+        // Close enough, set to target values and stop animation
         scale = targetScale;
+        offsetX = targetOffsetX;
+        offsetY = targetOffsetY;
         zoomAnimationId = null;
       } else {
-        // Update scale with step
-        scale += step;
+        // Update values with steps
+        scale += scaleStep;
+        offsetX += offsetXStep;
+        offsetY += offsetYStep;
         
         // Request next animation frame
         zoomAnimationId = requestAnimationFrame(animateZoom);
@@ -180,6 +195,8 @@ function setupCanvasZoomPan() {
       
       // Store transform values
       canvas.dataset.scale = scale;
+      canvas.dataset.offsetX = offsetX;
+      canvas.dataset.offsetY = offsetY;
       
       // Trigger redraw
       triggerRedraw(canvasId);
@@ -194,10 +211,6 @@ function setupCanvasZoomPan() {
       const mouseX = event.clientX - rect.left;
       const mouseY = event.clientY - rect.top;
       
-      // Calculate mouse position in canvas space (before zoom)
-      const canvasX = (mouseX - offsetX) / scale;
-      const canvasY = (mouseY - offsetY) / scale;
-      
       // Calculate zoom factor
       const zoomIntensity = 0.1;
       const delta = event.deltaY < 0 ? zoomIntensity : -zoomIntensity;
@@ -205,13 +218,13 @@ function setupCanvasZoomPan() {
       // Calculate target scale
       targetScale = Math.max(minScale, Math.min(maxScale, scale * (1 + delta)));
       
-      // Calculate new offsets to keep the point under the mouse fixed
-      offsetX = mouseX - canvasX * targetScale;
-      offsetY = mouseY - canvasY * targetScale;
+      // Calculate mouse position in world space (before zoom)
+      const worldX = (mouseX - offsetX) / scale;
+      const worldY = (mouseY - offsetY) / scale;
       
-      // Store offset values
-      canvas.dataset.offsetX = offsetX;
-      canvas.dataset.offsetY = offsetY;
+      // Calculate new target offsets to keep the point under the mouse fixed
+      targetOffsetX = mouseX - worldX * targetScale;
+      targetOffsetY = mouseY - worldY * targetScale;
       
       // Cancel any existing animation
       if (zoomAnimationId) {
@@ -236,6 +249,10 @@ function setupCanvasZoomPan() {
         offsetY += (e.clientY - lastY);
         lastX = e.clientX;
         lastY = e.clientY;
+        
+        // Update target values to match current offsets to prevent snapping back
+        targetOffsetX = offsetX;
+        targetOffsetY = offsetY;
         
         canvas.dataset.scale = scale;
         canvas.dataset.offsetX = offsetX;

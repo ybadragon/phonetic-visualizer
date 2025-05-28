@@ -233,6 +233,7 @@ function clearVisuals() {
 4. **Cleanup**: Properly clean up resources when a visualization is no longer displayed.
 5. **Phonetic Layers**: Use the provided phonetic layer generation for consistent behavior.
 6. **Typewriter Animation**: Use the animateTypewriter function for consistent text display.
+7. **Performance**: For smooth zoom animations, avoid large filled areas or gradients. Prefer outlines and simple shapes that are less computationally intensive to redraw during zoom operations.
 
 ## Example: Typography Visualizer
 

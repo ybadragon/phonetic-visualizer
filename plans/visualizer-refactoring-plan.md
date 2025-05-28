@@ -29,11 +29,12 @@ Implement a generic visualizer architecture with a registration system that hand
 
 ### Phase 3: Convert Existing Visualizers
 - [x] Refactor spiral visualizer to use the new system
-- [ ] Refactor ripple visualizers to use the new system
-- [ ] Refactor constellation visualizer to use the new system
-- [ ] Refactor fractal visualizer to use the new system
-- [ ] Refactor tree visualizer to use the new system
-- [ ] Refactor waveform visualizer to use the new system
+- [x] Refactor ripple visualizers to use the new system
+- [ ] Convert remaining visualizers to use the dynamic canvas creation system:
+  - [ ] Constellation visualizer
+  - [ ] Fractal visualizer
+  - [ ] Tree visualizer
+  - [ ] Waveform visualizer
 
 ### Phase 4: Update Main Application
 - [x] Update main.js to use the registration system

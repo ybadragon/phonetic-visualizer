@@ -183,18 +183,18 @@ Add a container and canvas element to `index.html`:
 import './visualizers/my-visualizer.js';
 ```
 
-### 6. Update Zoom/Pan Support
+### 6. Update Zoom/Pan Support (No longer needed with dynamic canvas creation)
 
-Add your canvas ID to the list in the `setupCanvasZoomPan` function in `main.js`:
+<!-- Add your canvas ID to the list in the `setupCanvasZoomPan` function in `main.js`:
 
 ```javascript
 function setupCanvasZoomPan() {
   const canvasIds = ["spiral", "ripple", "fractal", "constellation", "waveform", "typography", "my-visualizer"];
   // ...
 }
-```
+``` -->
 
-### 7. Update the triggerRedraw Function
+### 7. Update the triggerRedraw Function (No longer needed with dynamic canvas creation)
 
 Add a case for your visualizer in the `triggerRedraw` function in `main.js`:
 
@@ -235,9 +235,9 @@ function clearVisuals() {
 6. **Typewriter Animation**: Use the animateTypewriter function for consistent text display.
 7. **Performance**: For smooth zoom animations, avoid large filled areas or gradients. Prefer outlines and simple shapes that are less computationally intensive to redraw during zoom operations.
 
-## Example: Typography Visualizer
+## Example: Typography Visualizer (Removed)
 
-The Typography visualizer (`js/visualizers/typography.js`) provides a complete example of implementing a visualizer using the generic system. It demonstrates:
+The Typography visualizer (`js/visualizers/typography.js`) previously provided a complete example of implementing a visualizer using the generic system. It demonstrated:
 
 1. Proper state management
 2. Animation with easing functions

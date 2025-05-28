@@ -561,30 +561,6 @@ registerVisualizer('ripple2', {
   }
 });
 
-registerVisualizer('ripple3', {
-  displayName: 'Animated Pulse',
-  icon: '◎', // Updated icon to Bullseye
-  canvasId: 'ripple',
-  containerId: 'rippleContainer',
-  renderFunction: renderRipple3Specific,
-  redrawFunction: redrawRipple3Specific,
-  stateTemplate: {
-    layers: null,
-    frame: 0,
-    colors: null,
-    centerX: 0,
-    centerY: 0,
-    ringSpacing: 60,
-    animationStartTime: 0,
-    elapsedTime: 0,
-    animationId: null
-  },
-  animationConfig: {
-    duration: 8000,
-    layerDepth: 3
-  }
-});
-
 // For backward compatibility
 function renderRipple1(word) {
   const visualizer = getVisualizer('ripple1');
@@ -595,13 +571,6 @@ function renderRipple1(word) {
 
 function renderRipple2(word) {
   const visualizer = getVisualizer('ripple2');
-  if (visualizer) {
-    visualizer.render(word);
-  }
-}
-
-function renderRipple3(word) {
-  const visualizer = getVisualizer('ripple3');
   if (visualizer) {
     visualizer.render(word);
   }
@@ -621,29 +590,18 @@ function redrawRipple2() {
   }
 }
 
-function redrawRipple3() {
-  const visualizer = getVisualizer('ripple3');
-  if (visualizer) {
-    visualizer.redraw();
-  }
-}
-
 // Export for backward compatibility
 export { 
   renderRipple1, 
   renderRipple2, 
-  renderRipple3, 
   redrawRipple1, 
-  redrawRipple2, 
-  redrawRipple3 
+  redrawRipple2 
 };
 
 // Export the specific functions for potential reuse
 export { 
   renderRipple1Specific, 
   renderRipple2Specific, 
-  renderRipple3Specific,
   redrawRipple1Specific,
-  redrawRipple2Specific,
-  redrawRipple3Specific
+  redrawRipple2Specific
 };

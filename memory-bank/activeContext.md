@@ -22,8 +22,8 @@ Based on the refactoring plan, the following progress has been made:
 
 - ✅ Phase 3: Convert Existing Visualizers
   - ✅ Refactored spiral visualizer to use the new system
-  - ✅ Added typography visualizer as an example of the new system
-  - ✅ Refactored ripple visualizers to use the new system
+  - ✅ Added typography visualizer as an example of the new system (now removed)
+  - ✅ Refactored ripple visualizers to use the new system (Animated Pulse removed)
   - ✅ Refactored constellation visualizer to use the new system
   - ✅ Refactored fractal visualizer to use the new system
   - ✅ Refactored tree visualizer to use the new system
@@ -38,19 +38,20 @@ Based on the refactoring plan, the following progress has been made:
 - 🔄 Phase 5: Testing and Documentation
   - ✅ Tested existing refactored visualizers
   - ✅ Created documentation for adding new visualizers
-  - ✅ Added example of creating a new visualizer (typography)
+  - ✅ Added example of creating a new visualizer (typography, now removed)
   - ✅ Updated comments throughout the codebase
 
 ## Recent Changes
 
 1. **Waveform Audio Cleanup Fix**: Resolved an issue where Waveform visualizer audio continued playing after switching to another visualizer. Implemented an explicit stop function in `waveform.js` and called it from `main.js` when changing visualizers to ensure proper audio and UI state cleanup.
 2. **Waveform Visualizer Refactoring**: Successfully refactored the Waveform visualizer to use the generic architecture and dynamic canvas creation system. This included integrating its audio playback (ding sounds, reverb), interactive controls (play/pause, dual trigger), and specific animation logic with the new system, while ensuring proper state management and resource cleanup.
-3. **Ripple Visualizer Refactoring**: Refactored all three ripple visualizers (Radial Expansion, Concentric Waves, Animated Pulse) to use the new generic architecture. Fixed pan and zoom functionality by correctly applying canvas transforms.
+3. **Ripple Visualizer Refactoring**: Refactored ripple visualizers (Radial Expansion, Concentric Waves) to use the new generic architecture. Animated Pulse was removed. Fixed pan and zoom functionality by correctly applying canvas transforms.
 4. **Generic Visualizer Architecture**: Implemented a base visualizer system that standardizes the creation and management of visualizers.
 5. **Registration System**: Created a system for visualizers to register themselves with the main application, reducing the need to modify multiple files when adding new visualizers.
-6. **Typography Visualizer**: Added a new typography visualizer as an example of implementing a visualizer using the new system.
-7. **Documentation**: Created comprehensive documentation in `docs/visualizer-system.md` explaining how the system works and how to create new visualizers.
-8. **State Management Improvements**: Refactored the state management system to use templates and provide a more consistent interface for state updates.
+6. **Typography Visualizer (Removed)**: The typography visualizer, previously an example, has been removed.
+7. **Example Visualizer (Removed)**: The "Dynamic Canvas Example" visualizer has been removed.
+8. **Documentation**: Created comprehensive documentation in `docs/visualizer-system.md` explaining how the system works and how to create new visualizers.
+9. **State Management Improvements**: Refactored the state management system to use templates and provide a more consistent interface for state updates.
 
 ## Recent Changes
 
@@ -84,9 +85,9 @@ Based on the refactoring plan, the following progress has been made:
    - Mouse-centered zooming that keeps the point under the cursor fixed
    - Responsive panning with direct 1:1 mapping for more intuitive movement
 
-5. **Example Visualizer**: Added a new example visualizer that demonstrates the dynamic canvas creation system. This visualizer shows how to create a new visualization without manually adding HTML elements.
+5. **Example Visualizer (Removed)**: The example visualizer demonstrating dynamic canvas creation has been removed.
 
-6. **Updated Documentation**: Enhanced the documentation in `docs/visualizer-system.md` to explain the dynamic canvas creation feature and provide examples of its usage.
+6. **Updated Documentation**: Enhanced the documentation in `docs/visualizer-system.md` to explain the dynamic canvas creation feature.
 
 ## Recent Changes
 

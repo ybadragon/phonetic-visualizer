@@ -10,9 +10,7 @@ import { getVisualizer, initializeVisualizerUI, getAllVisualizers, getAllCanvasI
 // Note: Icons are added directly in the visualizer files now.
 import './visualizers/tree.js'; 
 import './visualizers/spiral.js';
-import './visualizers/typography.js';
 import './visualizers/ripple.js';
-import './visualizers/example.js';
 import './visualizers/fractal.js';
 import './visualizers/waveform.js';
 import './visualizers/constellation.js'; // Ensure constellation is also imported for registration

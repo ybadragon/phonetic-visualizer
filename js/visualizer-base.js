@@ -285,6 +285,11 @@ function initializeVisualizerUI() {
   
   // Add options for each registered visualizer
   Object.entries(visualizers).forEach(([key, visualizer]) => {
+    // Skip visualizers that are not intended to be in the dropdown
+    if (key === 'example' || key === 'typography' || key === 'ripple3') { // ripple3 corresponds to Animated Pulse
+      return; 
+    }
+    
     console.log(`Adding option for visualizer: ${key}`, visualizer);
     const option = document.createElement('option');
     option.value = key;

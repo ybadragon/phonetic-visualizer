@@ -14,6 +14,7 @@ import './visualizers/ripple.js';
 import './visualizers/fractal.js';
 import './visualizers/waveform.js';
 import './visualizers/constellation.js'; // Ensure constellation is also imported for registration
+import './visualizers/futuristic.js';
 import { stopWaveformVisualization } from './visualizers/waveform.js'; // Specific stop function
 // renderConstellation is not needed here as constellation.js will handle its own registration
 

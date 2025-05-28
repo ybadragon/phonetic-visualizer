@@ -91,7 +91,12 @@ Based on the refactoring plan, the following progress has been made:
 
 ## Recent Changes
 
-1. **Fractal Visualizer Refactoring**: Successfully refactored the Fractal visualizer to use the generic architecture and dynamic canvas creation system. This refactoring:
+1. **Futuristic Glyphs Enhancements**:
+    - Added a new visualizer called "Futuristic Glyphs" (`futuristic.js`). This visualizer displays phonetic components using concentric, glowing geometric shapes with pulsing and rotating animations, adhering to the generic visualizer architecture and dynamic canvas creation.
+    - Updated "Futuristic Glyphs" to use a different color for each concentric layer, cycling through a predefined palette (cyan, magenta, lime green, electric blue) to improve layer differentiation.
+    - Added an icon (💠) for "Futuristic Glyphs" in the selection dropdown.
+    - Fixed bugs related to canvas ID for transformations, layer depth, and data structure handling for phoneme counts.
+2. **Fractal Visualizer Refactoring**: Successfully refactored the Fractal visualizer to use the generic architecture and dynamic canvas creation system. This refactoring:
    - Integrates the Fractal Garden visualizer with the generic visualizer system
    - Maintains all existing functionality including the seasonal changes and detailed ground elements
    - Properly implements zoom and pan functionality with correct transform handling

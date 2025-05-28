@@ -1,11 +1,15 @@
 /**
- * Phonetic Visualizer - Waveform Visualization
+ * Phonetic Visualizer - Waveform Visualization (Refactored)
  * Renders an audio waveform visualization using Web Audio API and Canvas
- * with pleasing "ding" sounds for each character
+ * with pleasing "ding" sounds for each character.
+ * Adapted to the generic visualizer system.
  */
 
-import { animateTypewriter, generatePhoneticLayers, getFinalLayerText, getCanvasTransform } from '../utils.js';
-import { getState, updateState, cancelAnimation } from '../state.js';
+import { getCanvasTransform } from '../utils.js'; // animateTypewriter, generatePhoneticLayers, getFinalLayerText are handled by visualizer-base
+import { getState, updateState, cancelAnimation } from '../state.js'; // cancelAnimation is for the old system, visualizer-base handles its own
+import { registerVisualizer } from '../visualizer-base.js';
+
+let localAudioContext = null; // Store AudioContext locally to persist across renders if possible
 
 /**
  * Creates a reverb impulse response for the convolver node
@@ -20,15 +24,12 @@ function createReverbImpulse(audioContext, duration = 3.0, decay = 0.3) {
   const impulse = audioContext.createBuffer(2, length, sampleRate);
   const leftChannel = impulse.getChannelData(0);
   const rightChannel = impulse.getChannelData(1);
-  
-  // Fill the buffer with white noise that decays exponentially
+
   for (let i = 0; i < length; i++) {
     const n = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
     leftChannel[i] = n;
-    // Slightly different for stereo effect
     rightChannel[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
   }
-  
   return impulse;
 }
 
@@ -37,288 +38,80 @@ function createReverbImpulse(audioContext, duration = 3.0, decay = 0.3) {
  * @param {AudioContext} audioContext - The audio context to use
  * @param {number} frequency - Base frequency for the ding sound
  * @param {string} type - Type of oscillator to use ('sine', 'triangle', etc.)
- * @returns {AudioBuffer} The created ding sound buffer
+ * @returns {Promise<AudioBuffer>} A promise that resolves with the created ding sound buffer
  */
 function createDingSound(audioContext, frequency, type = 'sine') {
-  // Create an offline audio context for rendering the sound
   const sampleRate = audioContext.sampleRate;
-  const duration = 3.0; // 3 seconds to allow for longer reverb tail
+  const duration = 3.0;
+  // OfflineAudioContext might not be available in all environments or might have issues.
+  // For simplicity in refactoring, we'll assume it works as in the original.
   const offlineCtx = new OfflineAudioContext(2, sampleRate * duration, sampleRate);
-  
-  // Create oscillator
+
   const oscillator = offlineCtx.createOscillator();
   oscillator.type = type;
   oscillator.frequency.value = frequency;
-  
-  // Create gain node for envelope
+
   const gainNode = offlineCtx.createGain();
-  
-  // Create convolver for reverb
   const convolver = offlineCtx.createConvolver();
-  convolver.buffer = createReverbImpulse(offlineCtx, 2.5, 0.4); // Longer, slower decay
-  
-  // Create a dry/wet mix
+  convolver.buffer = createReverbImpulse(offlineCtx, 2.5, 0.4);
+
   const dryGain = offlineCtx.createGain();
-  dryGain.gain.value = 0.4; // 40% dry signal
-  
+  dryGain.gain.value = 0.4;
   const wetGain = offlineCtx.createGain();
-  wetGain.gain.value = 0.6; // 60% wet (reverb) signal for more spacey sound
-  
-  // Set envelope (attack, decay, sustain, release)
+  wetGain.gain.value = 0.6;
+
   const now = offlineCtx.currentTime;
   gainNode.gain.setValueAtTime(0, now);
-  gainNode.gain.linearRampToValueAtTime(0.7, now + 0.01); // Quick attack
-  gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4); // Longer decay for the main sound
-  
-  // Connect nodes for dry signal
+  gainNode.gain.linearRampToValueAtTime(0.7, now + 0.01);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
   oscillator.connect(gainNode);
   gainNode.connect(dryGain);
   dryGain.connect(offlineCtx.destination);
-  
-  // Connect nodes for wet (reverb) signal
   gainNode.connect(convolver);
   convolver.connect(wetGain);
   wetGain.connect(offlineCtx.destination);
-  
-  // Start and stop oscillator
+
   oscillator.start(now);
-  oscillator.stop(now + 0.4); // Longer oscillator duration
-  
-  // Render audio
+  oscillator.stop(now + 0.4);
+
   return offlineCtx.startRendering();
 }
 
 /**
- * Renders a waveform visualization for the given word
- * @param {string} word - The word to visualize
+ * Maps a character to a frequency based on its position in the alphabet
+ * @param {string} char - The character to map
+ * @returns {number} The frequency in Hz
  */
-function renderWaveform(word) {
-  if (!word) return;
-  
-  // First, perform a complete cleanup of previous resources
-  // This is critical to prevent memory leaks and performance issues
-  cleanupWaveformResources();
-  
-  // We no longer disable the input field by default since audio starts disabled
-  // This allows users to type and change the word without having to toggle audio
-  document.getElementById("wordInput").disabled = false;
-  
-  const canvas = document.getElementById("waveform");
-  canvas.style.display = "block";
-  const ctx = canvas.getContext("2d");
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  // Make sure the canvas container is visible
-  document.getElementById("waveformContainer").style.display = "block";
-  
-  // Generate phonetic layers
-  const layers = generatePhoneticLayers(word, 3); // Support 3 levels for more recursiveness
-  
-  // Get the final layer for typewriter animation
-  const finalText = getFinalLayerText(layers);
-  
-  // Animation duration
-  const animationDuration = 8000; // 8 seconds for full animation cycle
-  
-  // Start typewriter animation
-  animateTypewriter(finalText, animationDuration);
-  
-  // Create audio context if needed
-  let audioContext = getState('waveform').audioContext;
-  if (!audioContext) {
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      audioContext = new AudioContext();
-      updateState('waveform', { audioContext });
-    } catch (e) {
-      console.error("Web Audio API is not supported in this browser");
-      // Draw fallback message
-      ctx.fillStyle = "#e94560";
-      ctx.font = "24px monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("Web Audio API not supported in this browser", canvas.width / 2, canvas.height / 2);
-      return;
-    }
+function charToFrequency(char) {
+  const baseFrequency = 220; // A3
+  const lowerChar = char.toLowerCase();
+  if (lowerChar >= 'a' && lowerChar <= 'z') {
+    const position = lowerChar.charCodeAt(0) - 'a'.charCodeAt(0);
+    return baseFrequency * Math.pow(2, position / 12);
   }
-  
-  // Create new audio nodes
-  const audioNodes = [];
-  const masterGain = audioContext.createGain();
-  masterGain.gain.value = 0.3; // Moderate volume
-  masterGain.connect(audioContext.destination);
-  audioNodes.push(masterGain);
-  
-  // Create analyzer for visualization
-  const analyzer = audioContext.createAnalyser();
-  analyzer.fftSize = 2048;
-  analyzer.connect(masterGain);
-  audioNodes.push(analyzer);
-  
-  // Create sound buffers for each character
-  const soundBuffers = [];
-  // Use smoother oscillator types for all layers (no sawtooth)
-  const oscillatorTypes = ['sine', 'triangle', 'sine', 'triangle'];
-  
-  // Create a promise for each sound buffer
-  const bufferPromises = [];
-  
-  // Group characters by layer for even distribution
-  const layerCharacters = {};
-  
-  // First pass: group characters by layer and track unique characters
-  layers.forEach((layer, layerIndex) => {
-    layerCharacters[layerIndex] = [];
-    
-    layer.forEach((char, charIndex) => {
-      // Create a unique key for this character in this layer
-      const charKey = `${char}-${layerIndex}`;
-      
-      // Only add unique characters to the layer
-      if (!layerCharacters[layerIndex].some(item => item.key === charKey)) {
-        layerCharacters[layerIndex].push({
-          key: charKey,
-          char,
-          charIndex,
-          frequency: charToFrequency(char)
-        });
-      }
+  return baseFrequency;
+}
+
+/**
+ * Performs cleanup of audio-specific resources for the waveform visualization.
+ * This should be called before setting up new audio resources.
+ */
+function cleanupWaveformAudioResources() {
+  const state = getState('waveform');
+  if (state && state.audioNodes) {
+    state.audioNodes.forEach(node => {
+      try {
+        if (node.stop) node.stop(0);
+        node.disconnect();
+      } catch (e) { /* Node might already be disconnected or stopped */ }
     });
-  });
-  
-  // Second pass: create sound buffers with evenly distributed angles
-  Object.keys(layerCharacters).forEach(layerIndex => {
-    layerIndex = parseInt(layerIndex);
-    const characters = layerCharacters[layerIndex];
-    const angleStep = (Math.PI * 2) / characters.length;
-    
-    characters.forEach((charInfo, index) => {
-      const oscillatorType = oscillatorTypes[layerIndex % oscillatorTypes.length];
-      
-      // Create ding sound and add to promises
-      const promise = createDingSound(audioContext, charInfo.frequency, oscillatorType)
-        .then(buffer => {
-          soundBuffers.push({
-            buffer,
-            char: charInfo.char,
-            frequency: charInfo.frequency,
-            layerIndex,
-            charIndex: charInfo.charIndex,
-            lastPlayedTime: 0, // Track when this sound was last played
-            // Calculate orbit radius based on layer
-            orbitRadius: 100 + layerIndex * 80,
-            // Position characters with layer-dependent offset from the trigger line
-            // Each layer starts half way closer to the trigger line than the previous layer
-            // This creates a cascading effect where they reach the trigger line in sequence
-            angle: (index * angleStep) - (Math.PI / 8) * Math.pow(0.5, layerIndex),
-            // Each layer moves at half the speed of the previous layer
-            // Layer 0 (innermost) has base speed of 0.5
-            // Layer 1 has speed of 0.25, Layer 2 has speed of 0.125, etc.
-            speed: 0.5 / Math.pow(2, layerIndex)
-          });
-        });
-      
-      bufferPromises.push(promise);
-    });
-  });
-  
-  // Wait for all sound buffers to be created
-  Promise.all(bufferPromises).then(() => {
-    // Create buffer for analyzer data
-    const bufferLength = analyzer.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    
-    // Color palette for waveforms
-    const colors = [
-      "#ff6b6b", // Red for original word
-      "#4ecdc4", // Teal for first phonetic level
-      "#ffe66d", // Yellow for second phonetic level
-      "#a78bfa"  // Purple for third phonetic level
-    ];
-    
-    // Store state for zoom/pan and animation
-    const isPlaying = false; // Start with sound disabled by default
-    const dualTrigger = false; // Start with single trigger mode (right side only)
-    updateState('waveform', {
-      analyzer,
-      dataArray,
-      bufferLength,
-      colors,
-      soundBuffers,
-      audioNodes,
-      animationStartTime: Date.now(),
-      animationDuration,
-      isPlaying,
-      dualTrigger,
-      lastFrameTime: Date.now()
-    });
-    
-    // Keep the input field enabled since audio is not playing by default
-    document.getElementById("wordInput").disabled = isPlaying;
-    
-    // Hide the disabled message
-    document.getElementById("inputDisabledMessage").style.display = isPlaying ? "block" : "none";
-    
-    // Cancel any existing animation
-    cancelAnimation('waveform');
-    
-    // Add click handler for buttons
-    canvas.onclick = function(event) {
-      const buttonSize = 50;
-      const clickX = event.offsetX;
-      const clickY = event.offsetY;
-      
-      // Check if click is on the play/pause button
-      const playButtonX = canvas.width - buttonSize - 20;
-      const playButtonY = 20;
-      
-      const playDistance = Math.sqrt(
-        Math.pow(clickX - (playButtonX + buttonSize/2), 2) + 
-        Math.pow(clickY - (playButtonY + buttonSize/2), 2)
-      );
-      
-      if (playDistance <= buttonSize/2) {
-        toggleWaveformAudio();
-        return;
-      }
-      
-      // Check if click is on the dual trigger toggle button
-      const dualButtonX = canvas.width - buttonSize - 20;
-      const dualButtonY = 20 + buttonSize + 10; // Position below play button
-      
-      const dualDistance = Math.sqrt(
-        Math.pow(clickX - (dualButtonX + buttonSize/2), 2) + 
-        Math.pow(clickY - (dualButtonY + buttonSize/2), 2)
-      );
-      
-      if (dualDistance <= buttonSize/2) {
-        toggleDualTrigger();
-      }
-    };
-    
-    // Start animation
-    function drawFrame() {
-      // Calculate time-based animation
-      const now = Date.now();
-      const elapsedTime = now - getState('waveform').animationStartTime;
-      const deltaTime = now - (getState('waveform').lastFrameTime || now);
-      updateState('waveform', { 
-        elapsedTime,
-        lastFrameTime: now
-      });
-      
-      // Draw using the redraw function
-      redrawWaveform(deltaTime);
-      
-      // Continue animation
-      const animationId = requestAnimationFrame(drawFrame);
-      updateState('waveform', { animationId });
-    }
-    
-    drawFrame();
-  });
+  }
+  // Note: The visualizer-base calls resetState, which will clear
+  // soundBuffers, audioNodes etc. based on the template.
+  // We mainly need to ensure active audio sources are stopped and disconnected.
+  // If localAudioContext is being managed and needs closing, it would happen here or at a higher level.
+  // For now, we assume localAudioContext persists or is recreated safely.
 }
 
 /**
@@ -327,34 +120,29 @@ function renderWaveform(word) {
  */
 function playDingSound(soundInfo) {
   const state = getState('waveform');
-  if (!state.isPlaying) return;
-  
+  if (!state.isPlaying || !state.audioContext) return;
+
   const audioContext = state.audioContext;
   const now = audioContext.currentTime;
-  
-  // Create source node
+
   const source = audioContext.createBufferSource();
   source.buffer = soundInfo.buffer;
-  
-  // Create gain node for this sound
   const gain = audioContext.createGain();
-  
-  // Set gain based on layer (lower gain for deeper layers)
   const layerGain = Math.pow(0.8, soundInfo.layerIndex);
   gain.gain.value = layerGain * 0.5;
-  
-  // Connect nodes
+
   source.connect(gain);
   gain.connect(state.analyzer);
-  
-  // Start playback
   source.start(now);
-  
-  // Update last played time
   soundInfo.lastPlayedTime = Date.now();
-  
-  // Add to audio nodes for cleanup
-  state.audioNodes.push(source, gain);
+
+  // Add to audio nodes for cleanup by cleanupWaveformAudioResources if needed,
+  // though they are short-lived.
+  if (state.audioNodes) {
+      state.audioNodes.push(source, gain);
+  } else {
+      updateState('waveform', { audioNodes: [source, gain] });
+  }
 }
 
 /**
@@ -362,23 +150,19 @@ function playDingSound(soundInfo) {
  */
 function toggleWaveformAudio() {
   const state = getState('waveform');
-  if (!state.soundBuffers) return;
-  
+  if (!state || !state.soundBuffers) return; // Check state exists
+
   const isPlaying = !state.isPlaying;
   updateState('waveform', { isPlaying });
-  
-  // Enable/disable the word input field based on audio playback state
+
+  // TODO: Refactor global UI manipulation. For now, keep original behavior.
   const wordInput = document.getElementById("wordInput");
   if (wordInput) {
     wordInput.disabled = isPlaying;
-    
-    // Show/hide the disabled message
     const disabledMessage = document.getElementById("inputDisabledMessage");
     if (disabledMessage) {
       disabledMessage.style.display = isPlaying ? "block" : "none";
     }
-    
-    // Add a visual indicator that the input is disabled
     if (isPlaying) {
       wordInput.title = "Input disabled while audio is playing. Click the pause button to enable.";
       wordInput.style.backgroundColor = "#f0f0f0";
@@ -391,264 +175,357 @@ function toggleWaveformAudio() {
 
 /**
  * Toggles dual trigger mode for the waveform visualization
- * When enabled, sounds will be triggered when characters cross both the right (0°) and left (180°) sides
- * When disabled, sounds will only be triggered when characters cross the right side (0°)
  */
 function toggleDualTrigger() {
   const state = getState('waveform');
-  if (!state.soundBuffers) return;
-  
+  if (!state || !state.soundBuffers) return; // Check state exists
+
   const dualTrigger = !state.dualTrigger;
   updateState('waveform', { dualTrigger });
 }
 
+
+const waveformStateTemplate = {
+  layers: null, // Provided by visualizer-base
+  word: "",     // Provided by visualizer-base (effectively)
+  audioContext: null,
+  analyzer: null,
+  dataArray: null,
+  bufferLength: 0,
+  colors: ["#ff6b6b", "#4ecdc4", "#ffe66d", "#a78bfa"],
+  soundBuffers: [],
+  audioNodes: [], // For managing nodes that need explicit cleanup
+  animationStartTime: 0,
+  animationDuration: 8000, // Specific to waveform
+  isPlaying: false,
+  dualTrigger: false,
+  lastFrameTime: 0,
+  deltaTime: 0,
+  animationId: null, // For the visualizer's internal animation loop
+  // centerX and centerY will be set based on canvas dimensions
+};
+
 /**
- * Performs a complete cleanup of all waveform visualization resources
- * This is essential to prevent memory leaks and performance issues
- * when changing words or navigating away from the visualization
+ * Stops all audio playback and animation for the waveform visualization.
+ * Also re-enables the word input field.
  */
-function cleanupWaveformResources() {
+function stopWaveformVisualization() {
   const state = getState('waveform');
-  
-  // Cancel any ongoing animations
-  cancelAnimation('waveform');
-  
-  // Stop and clean up audio resources
-  if (state.audioNodes) {
-    state.audioNodes.forEach(node => {
-      try {
-        if (node.stop) {
-          node.stop(0);
-        }
-        node.disconnect();
-      } catch (e) {
-        // Node might already be disconnected or stopped
-      }
+  if (state) {
+    if (state.animationId) {
+      cancelAnimationFrame(state.animationId); // Stop its own animation loop
+    }
+    cleanupWaveformAudioResources(); // Stop audio nodes
+    updateState('waveform', { 
+      isPlaying: false, 
+      animationId: null,
+      // Reset other relevant parts of state if necessary, though visualizer-base's resetState handles much of it on next render.
+      // Forcing isPlaying to false is key here.
+      audioNodes: [] // Clear audio nodes as they are disconnected
     });
   }
-  
-  // Clear sound buffers
-  if (state.soundBuffers) {
-    state.soundBuffers = [];
+
+  // Re-enable the word input field and hide the message
+  const wordInput = document.getElementById("wordInput");
+  if (wordInput) {
+    wordInput.disabled = false;
+    wordInput.title = "";
+    wordInput.style.backgroundColor = "";
   }
-  
-  // Reset animation state
-  updateState('waveform', { 
-    audioNodes: [],
-    soundBuffers: [],
-    isPlaying: false,
-    animationId: null
-  });
-  
-  // Re-enable the word input field
-  document.getElementById("wordInput").disabled = false;
-  
-  // Hide the disabled message
   const disabledMessage = document.getElementById("inputDisabledMessage");
   if (disabledMessage) {
     disabledMessage.style.display = "none";
   }
+  console.log("Waveform visualization stopped and input enabled.");
 }
 
 /**
- * Stops all audio playback for the waveform visualization
- * This should be called when navigating away from the waveform visualization
+ * Specific render function for Waveform visualization
+ * @param {string} word - The word to visualize
+ * @param {HTMLCanvasElement} canvas - The canvas element
+ * @param {CanvasRenderingContext2D} ctx - The canvas context
+ * @param {Array} layers - The phonetic layers (provided by visualizer-base)
  */
-function stopWaveformAudio() {
-  cleanupWaveformResources();
+function renderWaveformSpecific(word, canvas, ctx, layers) {
+  cleanupWaveformAudioResources(); // Clean up audio resources from previous run
+
+  // Initialize AudioContext if it doesn't exist or was closed
+  if (!localAudioContext || localAudioContext.state === 'closed') {
+    try {
+      const AudioContextGlobal = window.AudioContext || window.webkitAudioContext;
+      localAudioContext = new AudioContextGlobal();
+    } catch (e) {
+      console.error("Web Audio API is not supported in this browser");
+      ctx.fillStyle = "#e94560";
+      ctx.font = "24px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Web Audio API not supported", canvas.width / 2, canvas.height / 2);
+      updateState('waveform', { audioContext: null });
+      return;
+    }
+  }
+  updateState('waveform', { audioContext: localAudioContext });
+
+
+  const masterGain = localAudioContext.createGain();
+  masterGain.gain.value = 0.3;
+  masterGain.connect(localAudioContext.destination);
+
+  const analyzer = localAudioContext.createAnalyser();
+  analyzer.fftSize = 2048;
+  analyzer.connect(masterGain);
+  
+  const initialAudioNodes = [masterGain, analyzer];
+
+  const soundBuffers = [];
+  const oscillatorTypes = ['sine', 'triangle', 'sine', 'triangle'];
+  const bufferPromises = [];
+  const layerCharacters = {};
+
+  layers.forEach((layer, layerIndex) => {
+    layerCharacters[layerIndex] = [];
+    layer.forEach((char, charIndex) => {
+      const charKey = `${char}-${layerIndex}`;
+      if (!layerCharacters[layerIndex].some(item => item.key === charKey)) {
+        layerCharacters[layerIndex].push({
+          key: charKey, char, charIndex, frequency: charToFrequency(char)
+        });
+      }
+    });
+  });
+
+  Object.keys(layerCharacters).forEach(layerIndexStr => {
+    const layerIndex = parseInt(layerIndexStr);
+    const characters = layerCharacters[layerIndex];
+    if (!characters || characters.length === 0) return;
+    const angleStep = (Math.PI * 2) / characters.length;
+
+    characters.forEach((charInfo, index) => {
+      const oscillatorType = oscillatorTypes[layerIndex % oscillatorTypes.length];
+      const promise = createDingSound(localAudioContext, charInfo.frequency, oscillatorType)
+        .then(buffer => {
+          soundBuffers.push({
+            buffer, char: charInfo.char, frequency: charInfo.frequency,
+            layerIndex, charIndex: charInfo.charIndex, lastPlayedTime: 0,
+            orbitRadius: 100 + layerIndex * 80,
+            angle: (index * angleStep) - (Math.PI / 8) * Math.pow(0.5, layerIndex),
+            speed: 0.5 / Math.pow(2, layerIndex)
+          });
+        }).catch(err => console.error("Error creating ding sound:", err));
+      bufferPromises.push(promise);
+    });
+  });
+
+  Promise.all(bufferPromises).then(() => {
+    const bufferLength = analyzer.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    updateState('waveform', {
+      word, // Store word for reference if needed by redraw
+      layers, // Store layers if needed by redraw
+      analyzer, dataArray, bufferLength, soundBuffers,
+      audioNodes: initialAudioNodes, // Start with masterGain and analyzer
+      animationStartTime: Date.now(),
+      // isPlaying and dualTrigger are already in template, default to false
+      lastFrameTime: Date.now(),
+      deltaTime: 0,
+      // colors and animationDuration are in template
+    });
+    
+    // Ensure wordInput is re-enabled if isPlaying is false (default)
+    const currentWaveformState = getState('waveform');
+    if (document.getElementById("wordInput")) {
+        document.getElementById("wordInput").disabled = currentWaveformState.isPlaying;
+    }
+    if (document.getElementById("inputDisabledMessage")) {
+        document.getElementById("inputDisabledMessage").style.display = currentWaveformState.isPlaying ? "block" : "none";
+    }
+
+
+    // Setup click handler for buttons on canvas
+    // This needs to be managed carefully if canvas is recreated or event listeners stack up.
+    // For now, assign directly. visualizer-base doesn't provide a hook for this.
+    canvas.onclick = function(event) {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+      const clickY = event.clientY - rect.top;
+      
+      const buttonSize = 50;
+      // Play/Pause Button
+      const playButtonX = canvas.width - buttonSize - 20;
+      const playButtonY = 20;
+      const playDistance = Math.sqrt(Math.pow(clickX - (playButtonX + buttonSize/2), 2) + Math.pow(clickY - (playButtonY + buttonSize/2), 2));
+      if (playDistance <= buttonSize/2) {
+        toggleWaveformAudio();
+        return;
+      }
+      // Dual Trigger Button
+      const dualButtonX = canvas.width - buttonSize - 20;
+      const dualButtonY = 20 + buttonSize + 10;
+      const dualDistance = Math.sqrt(Math.pow(clickX - (dualButtonX + buttonSize/2), 2) + Math.pow(clickY - (dualButtonY + buttonSize/2), 2));
+      if (dualDistance <= buttonSize/2) {
+        toggleDualTrigger();
+      }
+    };
+
+    // Start animation loop
+    function drawFrame() {
+      const state = getState('waveform');
+      if (!state) return; // State might have been cleared
+
+      const now = Date.now();
+      const deltaTime = now - state.lastFrameTime;
+      
+      updateState('waveform', {
+        elapsedTime: now - state.animationStartTime,
+        lastFrameTime: now,
+        deltaTime: deltaTime // Store deltaTime for redraw
+      });
+      
+      // Get the updated state that includes deltaTime
+      const currentState = getState('waveform');
+      redrawWaveformSpecific(currentState, canvas, ctx);
+
+      const animationId = requestAnimationFrame(drawFrame);
+      updateState('waveform', { animationId });
+    }
+    drawFrame();
+
+  }).catch(err => console.error("Error processing sound buffers:", err));
 }
 
 /**
- * Redraws the waveform visualization without recalculating
- * @param {number} deltaTime - Time since last frame in milliseconds
+ * Specific redraw function for Waveform visualization
+ * @param {Object} state - The current state for 'waveform'
+ * @param {HTMLCanvasElement} canvas - The canvas element
+ * @param {CanvasRenderingContext2D} ctx - The canvas context
  */
-function redrawWaveform(deltaTime = 16) {
-  const state = getState('waveform');
-  if (!state.analyzer) return;
-  
-  const canvas = document.getElementById("waveform");
-  const ctx = canvas.getContext("2d");
-  const transform = getCanvasTransform("waveform");
-  const scale = transform.scale;
-  const offsetX = transform.offsetX;
-  const offsetY = transform.offsetY;
-  
+function redrawWaveformSpecific(state, canvas, ctx) {
+  if (!state || !state.analyzer) return;
+
+  const transform = getCanvasTransform(canvas.id); // canvas.id is correct here
+  const scale = transform.scale || 1;
+  const offsetX = transform.offsetX || 0;
+  const offsetY = transform.offsetY || 0;
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  // Draw background gradient
+
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
   gradient.addColorStop(0, "#1a1a2e");
   gradient.addColorStop(1, "#16213e");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  // Apply transform correctly
+
   ctx.save();
-  ctx.translate(offsetX * scale, offsetY * scale);
-  ctx.scale(scale, scale);
+  ctx.translate(offsetX, offsetY); // Apply pan
+  ctx.scale(scale, scale);       // Apply zoom
+
+  const { analyzer, dataArray, bufferLength, colors, soundBuffers = [], isPlaying, deltaTime = 16, dualTrigger } = state;
   
-  const analyzer = state.analyzer;
-  const dataArray = state.dataArray;
-  const bufferLength = state.bufferLength;
-  const colors = state.colors;
-  const soundBuffers = state.soundBuffers || [];
-  const elapsedTime = state.elapsedTime || 0;
-  const isPlaying = state.isPlaying;
-  
-  // Get frequency data
-  analyzer.getByteFrequencyData(dataArray);
-  
-  // Draw circular orbit paths
-  const centerX = canvas.width / 2;
-  const centerY = canvas.height / 2;
-  
-  // Draw orbit paths
+  analyzer.getByteFrequencyData(dataArray); // For potential future use, original drew time domain
+
+  const centerX = canvas.width / (2 * scale); // Adjust center for zoom
+  const centerY = canvas.height / (2 * scale);
+
+
   const uniqueOrbits = new Set(soundBuffers.map(sound => sound.orbitRadius));
-  [...uniqueOrbits].sort().forEach(radius => {
-    ctx.strokeStyle = "#ffffff22"; // Very light orbit paths
-    ctx.lineWidth = 1;
+  [...uniqueOrbits].sort((a,b) => a-b).forEach(radius => {
+    ctx.strokeStyle = "#ffffff22";
+    ctx.lineWidth = 1 / scale; // Adjust line width for zoom
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
     ctx.stroke();
   });
-  
-  // Draw waveform through the center
-  const waveHeight = canvas.height / 5; // Increased height for more visibility
-  
-  // Get time domain data
+
   analyzer.getByteTimeDomainData(dataArray);
-  
-  // Draw time domain waveform
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "#ffffff66"; // More visible white
+  ctx.lineWidth = 2 / scale;
+  ctx.strokeStyle = "#ffffff66";
   ctx.beginPath();
-  
-  const sliceWidth = (canvas.width * 1.0) / bufferLength;
+  const sliceWidth = (canvas.width / scale) / bufferLength;
   let x = 0;
-  
+  const waveHeight = (canvas.height / scale) / 5;
+
   for (let i = 0; i < bufferLength; i++) {
-    // Normalize the data to -1 to 1 range and center it at centerY
     const v = (dataArray[i] / 128.0) - 1.0;
     const y = centerY + (v * waveHeight / 2);
-    
-    if (i === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
-    }
-    
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
     x += sliceWidth;
   }
-  
   ctx.stroke();
-  
-  // Update and draw character markers in their orbits
-  soundBuffers.forEach((sound, index) => {
-    // Only update positions if audio is playing
+
+  soundBuffers.forEach(sound => {
     if (isPlaying) {
-      // Store previous angle to detect crossing the trigger line
       const prevAngle = sound.angle;
-      
-      // Update angle based on speed and delta time
       sound.angle += sound.speed * (deltaTime / 1000);
+
+      const crossedPrimaryTrigger = (prevAngle < 0 && sound.angle >= 0) || (prevAngle < Math.PI * 2 && sound.angle >= Math.PI * 2);
+      const crossedSecondaryTrigger = dualTrigger && ((prevAngle < Math.PI && sound.angle >= Math.PI) || (prevAngle > Math.PI && sound.angle < Math.PI));
       
-      // Get the dual trigger state
-      const dualTrigger = state.dualTrigger;
-      
-      // Check if we crossed the primary trigger line (right side of the circle, angle = 0)
-      const crossedPrimaryTrigger = (prevAngle < 0 && sound.angle >= 0) || 
-                                   (prevAngle < Math.PI * 2 && sound.angle >= Math.PI * 2);
-      
-      // Check if we crossed the secondary trigger line (left side of the circle, angle = π)
-      // Only check this if dual trigger mode is enabled
-      const crossedSecondaryTrigger = dualTrigger && 
-                                     ((prevAngle < Math.PI && sound.angle >= Math.PI) ||
-                                      (prevAngle > Math.PI && sound.angle < Math.PI));
-      
-      // Combine the triggers
-      const crossedTriggerLine = crossedPrimaryTrigger || crossedSecondaryTrigger;
-      
-      // Reset angle if it exceeds 2π
-      if (sound.angle >= Math.PI * 2) {
-        sound.angle -= Math.PI * 2;
-      }
-      
-      // If we crossed the trigger line, play the ding
-      // Also ensure we don't play sounds too frequently (at least 300ms apart)
-      if (crossedTriggerLine && Date.now() - sound.lastPlayedTime > 300) {
+      if (sound.angle >= Math.PI * 2) sound.angle -= Math.PI * 2;
+
+      if ((crossedPrimaryTrigger || crossedSecondaryTrigger) && Date.now() - sound.lastPlayedTime > 300) {
         playDingSound(sound);
-        // Add a pulse flag when sound is triggered
         sound.pulsing = true;
         sound.pulseStartTime = Date.now();
       }
     }
-    
-    // Calculate position based on orbit
+
     const xPos = centerX + Math.cos(sound.angle) * sound.orbitRadius;
     const yPos = centerY + Math.sin(sound.angle) * sound.orbitRadius;
-    
-    // Draw character marker
-    const markerSize = 24 - sound.layerIndex * 4;
+    const markerSize = (24 - sound.layerIndex * 4) / scale;
     const color = colors[sound.layerIndex % colors.length];
-    
-    // Calculate pulse effect - only pulse when sound is triggered
     let pulseFactor = 1.0;
+
     if (sound.pulsing) {
       const timeSincePulse = Date.now() - sound.pulseStartTime;
-      if (timeSincePulse < 500) { // Pulse for 500ms
+      if (timeSincePulse < 500) {
         pulseFactor = 1.0 + 0.5 * Math.sin(timeSincePulse / 500 * Math.PI);
       } else {
         sound.pulsing = false;
       }
     }
-    
-    // Draw glow effect
+
     const glowSize = markerSize * 2 * pulseFactor;
-    const glowGradient = ctx.createRadialGradient(
-      xPos, yPos, 0,
-      xPos, yPos, glowSize
-    );
-    
-    // Make the glow brighter if the sound was recently played
+    const glowGradient = ctx.createRadialGradient(xPos, yPos, 0, xPos, yPos, glowSize);
     const timeSincePlay = Date.now() - sound.lastPlayedTime;
     const glowIntensity = Math.max(0.3, Math.min(0.9, 1 - timeSincePlay / 1000));
-    
-    glowGradient.addColorStop(0, color + Math.floor(glowIntensity * 255).toString(16).padStart(2, '0')); 
+    glowGradient.addColorStop(0, color + Math.floor(glowIntensity * 255).toString(16).padStart(2, '0'));
     glowGradient.addColorStop(1, "rgba(0,0,0,0)");
-    
     ctx.fillStyle = glowGradient;
     ctx.beginPath();
     ctx.arc(xPos, yPos, glowSize, 0, Math.PI * 2);
     ctx.fill();
-    
-    // Draw character
+
     ctx.fillStyle = "#ffffff";
-    ctx.font = `${markerSize * pulseFactor}px monospace`; // Increase font size during pulse
+    ctx.font = `bold ${markerSize * pulseFactor}px monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(sound.char, xPos, yPos);
-    
-    // Draw small trail behind the character
+
     const trailLength = 5;
     for (let i = 1; i <= trailLength; i++) {
       const trailAngle = sound.angle - (i * 0.1);
       const trailX = centerX + Math.cos(trailAngle) * sound.orbitRadius;
       const trailY = centerY + Math.sin(trailAngle) * sound.orbitRadius;
       const trailSize = markerSize * (1 - i/trailLength) * 0.5;
-      
       ctx.fillStyle = color + Math.floor((1 - i/trailLength) * 128).toString(16).padStart(2, '0');
       ctx.beginPath();
       ctx.arc(trailX, trailY, trailSize, 0, Math.PI * 2);
       ctx.fill();
     }
   });
-  
-  // Draw play/pause indicator
+
+  // Draw UI elements (buttons, text) - these should not scale with zoom
+  ctx.restore(); // Restore to pre-zoom/pan state for UI
+  ctx.save();    // Save clean state for UI
+
   const buttonSize = 50;
   const playButtonX = canvas.width - buttonSize - 20;
   const playButtonY = 20;
-  
-  // Draw play/pause button
+
   ctx.fillStyle = "#16213e";
   ctx.strokeStyle = "#e94560";
   ctx.lineWidth = 2;
@@ -656,15 +533,12 @@ function redrawWaveform(deltaTime = 16) {
   ctx.arc(playButtonX + buttonSize/2, playButtonY + buttonSize/2, buttonSize/2, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-  
+
+  ctx.fillStyle = "#ffffff";
   if (isPlaying) {
-    // Draw pause icon
-    ctx.fillStyle = "#ffffff";
     ctx.fillRect(playButtonX + buttonSize/3, playButtonY + buttonSize/4, buttonSize/6, buttonSize/2);
     ctx.fillRect(playButtonX + buttonSize/2, playButtonY + buttonSize/4, buttonSize/6, buttonSize/2);
   } else {
-    // Draw play icon
-    ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.moveTo(playButtonX + buttonSize/3, playButtonY + buttonSize/4);
     ctx.lineTo(playButtonX + buttonSize/3, playButtonY + buttonSize*3/4);
@@ -672,56 +546,51 @@ function redrawWaveform(deltaTime = 16) {
     ctx.closePath();
     ctx.fill();
   }
-  
-  // Draw dual trigger toggle button
+
   const dualButtonX = canvas.width - buttonSize - 20;
   const dualButtonY = playButtonY + buttonSize + 10;
-  
   ctx.fillStyle = "#16213e";
-  ctx.strokeStyle = state.dualTrigger ? "#4ecdc4" : "#6c757d"; // Teal when active, gray when inactive
+  ctx.strokeStyle = state.dualTrigger ? "#4ecdc4" : "#6c757d";
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(dualButtonX + buttonSize/2, dualButtonY + buttonSize/2, buttonSize/2, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-  
-  // Draw dual trigger icon (two vertical lines)
-  ctx.fillStyle = state.dualTrigger ? "#ffffff" : "#aaaaaa"; // White when active, light gray when inactive
+  ctx.fillStyle = state.dualTrigger ? "#ffffff" : "#aaaaaa";
   ctx.fillRect(dualButtonX + buttonSize/3 - 5, dualButtonY + buttonSize/4, buttonSize/8, buttonSize/2);
   ctx.fillRect(dualButtonX + buttonSize*2/3 - 5, dualButtonY + buttonSize/4, buttonSize/8, buttonSize/2);
-  
-  // Draw instructions
-  ctx.fillStyle = "#ffffff77"; // 50% opacity white
+
+  ctx.fillStyle = "#ffffff77";
   ctx.font = "14px monospace";
   ctx.textAlign = "center";
-  
+  const textY1 = canvas.height - 30;
+  const textY2 = canvas.height - 10;
   if (isPlaying) {
-    ctx.fillText("Click top button to pause sound and enable editing", canvas.width / 2, canvas.height - 30);
+    ctx.fillText("Click top button to pause sound and enable editing", canvas.width / 2, textY1);
   } else {
-    ctx.fillText("Click top button to start animation and sound", canvas.width / 2, canvas.height - 30);
+    ctx.fillText("Click top button to start animation and sound", canvas.width / 2, textY1);
   }
+  ctx.fillText("Click bottom button to toggle dual trigger mode", canvas.width / 2, textY2);
   
-  ctx.fillText("Click bottom button to toggle dual trigger mode", canvas.width / 2, canvas.height - 10);
-  
-  ctx.restore();
+  ctx.restore(); // Restore to whatever state was before UI drawing
 }
 
-/**
- * Maps a character to a frequency based on its position in the alphabet
- * @param {string} char - The character to map
- * @returns {number} The frequency in Hz
- */
-function charToFrequency(char) {
-  const baseFrequency = 220; // A3
-  const lowerChar = char.toLowerCase();
-  
-  if (lowerChar >= 'a' && lowerChar <= 'z') {
-    const position = lowerChar.charCodeAt(0) - 'a'.charCodeAt(0);
-    return baseFrequency * Math.pow(2, position / 12); // Equal temperament
-  } else {
-    // For non-alphabetic characters, use a default frequency
-    return baseFrequency;
+// Register the waveform visualizer
+registerVisualizer('waveform', {
+  displayName: 'Waveform Audio',
+  canvasId: 'waveform', // Keep original canvas ID
+  containerId: 'waveformContainer', // Keep original container ID
+  renderFunction: renderWaveformSpecific,
+  redrawFunction: redrawWaveformSpecific,
+  stateTemplate: waveformStateTemplate,
+  animationConfig: { // Passed to generatePhoneticLayers and animateTypewriter by visualizer-base
+    layerDepth: 3,
+    duration: 8000
   }
-}
+});
 
-export { renderWaveform, redrawWaveform, toggleWaveformAudio, toggleDualTrigger, stopWaveformAudio, cleanupWaveformResources };
+// Export stop function for use by main.js
+export { stopWaveformVisualization };
+
+// The old stopWaveformAudio and cleanupWaveformResources are effectively replaced
+// by the new structure and cleanupWaveformAudioResources being called internally by render or stop.

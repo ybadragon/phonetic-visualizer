@@ -13,11 +13,13 @@ import './visualizers/typography.js';
 import './visualizers/ripple.js';
 import './visualizers/example.js'; // Example visualizer using dynamic canvas creation
 import './visualizers/fractal.js'; // Fractal visualizer now uses the generic architecture
-// The following imports will be updated as we refactor each visualizer
-import { renderWaveform, toggleWaveformAudio, cleanupWaveformResources } from './visualizers/waveform.js';
+import './visualizers/waveform.js'; // Waveform visualizer now uses the generic architecture
+import { stopWaveformVisualization } from './visualizers/waveform.js'; // Specific stop function
 import { renderConstellation } from './visualizers/constellation.js';
 
 // Log available visualizers for debugging
+let previouslySelectedVisualizerName = null; // Track previously active visualizer
+
 console.log('Main.js loaded, checking available visualizers...');
 setTimeout(() => {
   console.log('Available visualizers after initialization:', 
@@ -38,17 +40,10 @@ function initApp() {
   // Add event listener for word input
   document.getElementById("wordInput").addEventListener("input", function(e) {
     const word = e.target.value.trim();
-    const currentVisualization = document.getElementById("visualizationSelect").value;
+    // const currentVisualization = document.getElementById("visualizationSelect").value; // Not strictly needed here
     
     if (word.length > 0) {
       renderSelectedVisualization();
-    }
-  });
-
-  // Add event listener for waveform canvas click
-  document.getElementById("waveform").addEventListener("click", function(event) {
-    if (document.getElementById("waveformContainer").style.display === "block") {
-      // The click handler is already set up in the waveform module
     }
   });
 
@@ -71,8 +66,18 @@ function initApp() {
  * Renders the currently selected visualization
  */
 function renderSelectedVisualization() {
-  const choice = document.getElementById("visualizationSelect").value;
+  const choice = document.getElementById("visualizationSelect").value; // This is the new choice
   const word = document.getElementById("wordInput").value.trim();
+
+  // Stop waveform audio if it was the previously active visualizer and is now being switched away from
+  if (previouslySelectedVisualizerName === 'waveform' && previouslySelectedVisualizerName !== choice) {
+    if (typeof stopWaveformVisualization === 'function') {
+      console.log("Stopping previous waveform visualization.");
+      stopWaveformVisualization();
+    } else {
+      console.warn("stopWaveformVisualization function not available to stop previous waveform.");
+    }
+  }
   
   if (!word) {
     return;
@@ -91,11 +96,8 @@ function renderSelectedVisualization() {
     return;
   }
   
-  // Clean up any existing visualizations, especially important for waveform
+  // Clean up any existing visualizations
   clearVisuals();
-  
-  // Explicitly clean up waveform resources to prevent memory leaks and system lockup
-  cleanupWaveformResources();
   
   // Hide all visualization containers first
   document.querySelectorAll(".visualization-container").forEach(container => {
@@ -111,6 +113,7 @@ function renderSelectedVisualization() {
   if (visualizer) {
     console.log(`Using new system for ${choice}`);
     visualizer.render(word);
+    previouslySelectedVisualizerName = choice; // Update before returning
     return;
   } else {
     console.log(`Visualizer ${choice} not found in new system, falling back to old system`);
@@ -118,23 +121,22 @@ function renderSelectedVisualization() {
   
   // Fall back to the old system for visualizers that haven't been refactored yet
   switch (choice) {
-    case "waveform":
-      document.getElementById("waveformContainer").style.display = "block";
-      renderWaveform(word);
-      break;
     case "constellation":
       document.getElementById("constellationContainer").style.display = "block";
       renderConstellation(word);
       break;
     default:
       // Default to a registered visualizer if unknown visualization type
-      const defaultVisualizer = getVisualizer('tree');
+      // This case should ideally not be hit if 'choice' is a valid registered visualizer
+      console.warn(`Visualizer ${choice} not handled by new system and not in old switch. Attempting default.`);
+      const defaultVisualizer = getVisualizer('tree'); // Or some other sensible default
       if (defaultVisualizer) {
         defaultVisualizer.render(word);
       } else {
         console.error(`No default visualizer found for unknown type: ${choice}`);
       }
   }
+  previouslySelectedVisualizerName = choice; // Update after rendering, ensuring it's always set
 }
 
 /**
@@ -312,13 +314,6 @@ function triggerRedraw(canvasId) {
   
   // Import redraw functions dynamically to avoid circular dependencies
   switch (canvasId) {
-    case "waveform":
-      import('./visualizers/waveform.js').then(module => {
-        if (module.redrawWaveform) module.redrawWaveform();
-      }).catch(error => {
-        console.error(`Error importing waveform module:`, error);
-      });
-      break;
     case "constellation":
       import('./visualizers/constellation.js').then(module => {
         if (module.redrawConstellation) module.redrawConstellation();
